@@ -4,544 +4,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redefinir Senha &mdash; SGPP | Sistema de Gestão e Planejamento Pedagógico</title>
+    <title>Redefinir senha — SGPP</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4">
-
-    <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap 5 & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
-
-    <style>
-        /* ── Indicador de etapas ── */
-        .otp-steps {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0;
-            margin-bottom: 1.5rem;
-        }
-        .otp-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        .otp-step-circle {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-            border: 2px solid #dee2e6;
-            background: #fff;
-            color: #adb5bd;
-            transition: all .3s;
-        }
-        .otp-step.active .otp-step-circle {
-            background: #0d6efd;
-            border-color: #0d6efd;
-            color: #fff;
-        }
-        .otp-step.done .otp-step-circle {
-            background: #198754;
-            border-color: #198754;
-            color: #fff;
-        }
-        .otp-step-label {
-            font-size: 0.7rem;
-            color: #adb5bd;
-            font-weight: 500;
-        }
-        .otp-step.active .otp-step-label { color: #0d6efd; }
-        .otp-step.done .otp-step-label   { color: #198754; }
-        .otp-connector {
-            width: 48px;
-            height: 2px;
-            background: #dee2e6;
-            margin-bottom: 18px;
-        }
-        .otp-connector.done { background: #198754; }
-
-        /* ── Inputs do código OTP ── */
-        .otp-inputs {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-        }
-        .otp-digit {
-            width: 48px;
-            height: 56px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            font-family: 'Courier New', Courier, monospace;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            outline: none;
-            transition: border-color .2s, box-shadow .2s;
-            caret-color: #0d6efd;
-        }
-        .otp-digit:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 3px rgba(13,110,253,.15);
-        }
-        .otp-digit.filled {
-            border-color: #0d6efd;
-            background: #f0f6ff;
-        }
-        .otp-digit.error {
-            border-color: #dc3545;
-            animation: shake .4s ease;
-        }
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            20%      { transform: translateX(-6px); }
-            40%      { transform: translateX(6px); }
-            60%      { transform: translateX(-4px); }
-            80%      { transform: translateX(4px); }
-        }
-
-        /* ── Força de senha ── */
-        .password-strength-bar {
-            height: 4px;
-            border-radius: 2px;
-            transition: width .3s, background-color .3s;
-        }
-        .toggle-pwd { cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
 </head>
 
 <body>
-    <div class="container-fluid p-0">
-        <div class="row g-0 auth-wrapper">
+    <div class="sgpp-auth">
 
-            <!-- PAINEL ESQUERDO -->
-            <div class="col-lg-6 auth-sidebar d-none d-lg-flex">
-                <div class="auth-sidebar-content">
-                    <div class="mb-3">
-                        <span class="badge bg-white text-primary border shadow-xs px-3 py-1.5 rounded-pill fw-semibold">
-                            <i class="bi bi-shield-lock-fill me-1"></i> Recuperação &bull; SGPP
-                        </span>
-                    </div>
+        <aside class="sgpp-aside">
+            <a href="/" class="sgpp-brand">
+                <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4" alt="" width="32" height="32">
+                SGPP
+            </a>
 
-                    <a href="/" class="auth-sidebar-brand text-decoration-none mb-3">
-                        <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4" alt="Logo SGPP" width="46" height="46">
-                        <div class="text-start">
-                            <h4 class="mb-0 fw-bold text-dark lh-1">SGPP</h4>
-                            <span class="text-muted small" style="font-size: 0.78rem;">Gestão e Planejamento Pedagógico</span>
-                        </div>
-                    </a>
-
-                    <div class="auth-hero-copy text-center mb-3">
-                        <h1 class="auth-main-title fw-bold text-dark mb-2">
-                            Recuperação Segura de Acesso
-                        </h1>
-                        <p class="auth-main-subtitle text-muted mx-auto mb-0" style="max-width: 440px;">
-                            Um código de verificação de 6 dígitos será enviado para o seu e-mail institucional. Nenhuma senha é exposta neste processo.
-                        </p>
-                    </div>
-
-                    <div class="auth-illustration-container text-center my-auto py-2">
-                        <img src="{{ url_for('static', filename='img/computador.png') }}"
-                             alt="Sistema de Planejamento Pedagógico"
-                             class="img-fluid auth-illustration">
-                    </div>
-
-                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <span class="auth-feature-pill"><i class="bi bi-shield-check text-primary"></i> Código OTP</span>
-                        <span class="auth-feature-pill"><i class="bi bi-clock-history text-primary"></i> Válido 15 min</span>
-                        <span class="auth-feature-pill"><i class="bi bi-envelope-check text-primary"></i> Verificação E-mail</span>
-                    </div>
-                </div>
-
-                <div class="auth-sidebar-footer pt-3 border-top border-secondary border-opacity-10 text-muted small text-center">
-                    <i class="bi bi-shield-check text-success me-1"></i> SGPP &copy; 2026 &mdash; Suporte via administração escolar.
-                </div>
+            <div class="sgpp-aside-text">
+                <h2>Planejamento pedagógico, do plano de curso à avaliação.</h2>
+                <p>Cronogramas, planos de aula e atividades em um só lugar, já no formato da instituição.</p>
             </div>
 
-            <!-- PAINEL DIREITO (FORMULÁRIO) -->
-            <div class="col-12 col-lg-6 auth-main">
-                <div class="w-100" style="max-width: 470px;">
+            <div class="sgpp-aside-foot">© 2026 SGPP</div>
+        </aside>
 
-                    <!-- Cabeçalho Mobile -->
-                    <div class="d-flex d-lg-none align-items-center justify-content-center gap-3 mb-4 text-start">
-                        <a href="/" class="d-flex align-items-center gap-3 text-decoration-none">
-                            <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4" alt="Logo SGPP" width="42" height="42">
-                            <div>
-                                <div class="fw-bold text-dark fs-5 lh-1">SGPP</div>
-                                <small class="text-muted">Sistema de Planejamento Pedagógico</small>
-                            </div>
-                        </a>
-                    </div>
+        <main class="sgpp-main">
+            <div class="sgpp-main-top">
+                <a href="/" class="sgpp-brand">
+                    <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4" alt="" width="28" height="28">
+                    SGPP
+                </a>
+                <a href="/login" class="sgpp-link">Voltar ao login</a>
+            </div>
 
-                    <div class="auth-card">
-
-                        <!-- Ícone e Título -->
-                        <div class="text-center mb-3">
-                            <div class="auth-card-icon shadow-sm">
-                                <i class="bi bi-key-fill"></i>
-                            </div>
-                            <h2 class="fw-bold mb-1 text-dark fs-3">Redefinir Senha</h2>
-                            <p class="text-muted small mb-0">
-                                {% if codigo_enviado %}
-                                    Digite o código recebido e escolha uma nova senha
-                                {% else %}
-                                    Informe seu e-mail para receber o código de verificação
-                                {% endif %}
-                            </p>
-                        </div>
-
-                        <!-- Indicador de etapas -->
-                        <div class="otp-steps">
-                            <div class="otp-step {{ 'done' if codigo_enviado else 'active' }}">
-                                <div class="otp-step-circle">
-                                    {% if codigo_enviado %}<i class="bi bi-check-lg"></i>{% else %}1{% endif %}
-                                </div>
-                                <span class="otp-step-label">E-mail</span>
-                            </div>
-                            <div class="otp-connector {{ 'done' if codigo_enviado else '' }}"></div>
-                            <div class="otp-step {{ 'active' if codigo_enviado else '' }}">
-                                <div class="otp-step-circle">2</div>
-                                <span class="otp-step-label">Código + Senha</span>
-                            </div>
-                        </div>
-
-                        <!-- Alertas -->
-                        {% if erro %}
-                        <div class="alert alert-danger py-2 px-3 mb-3 d-flex align-items-center gap-2 small rounded-3 border-danger-subtle" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger flex-shrink-0"></i>
-                            <div>{{ erro }}</div>
-                        </div>
-                        {% endif %}
-
-                        {% if info_msg %}
-                        <div class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center gap-2 small rounded-3 border-success-subtle" role="alert">
-                            <i class="bi bi-check-circle-fill fs-5 text-success flex-shrink-0"></i>
-                            <div>{{ info_msg }}</div>
-                        </div>
-                        {% endif %}
-
-                        <!-- ============================================================ -->
-                        <!-- ETAPA 1: Solicitar código (apenas e-mail)                   -->
-                        <!-- ============================================================ -->
-                        {% if not codigo_enviado %}
-                        <form method="POST" action="/redefinir_senha" id="form-etapa1">
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-dark small">
-                                    <i class="bi bi-envelope text-primary me-1"></i> E-mail Institucional <span class="text-danger">*</span>
-                                </label>
-                                <input type="email" name="email" id="email-etapa1"
-                                       class="form-control form-control-lg auth-input"
-                                       placeholder="nome.sobrenome@email.com"
-                                       value="{{ email or '' }}"
-                                       required autofocus autocomplete="email">
-                                <div class="form-text small text-muted mt-1">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Use o mesmo e-mail cadastrado no sistema.
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm auth-btn-submit" id="btn-enviar">
-                                <span id="btn-enviar-text">
-                                    <i class="bi bi-send me-1"></i> Enviar Código de Verificação
-                                </span>
-                                <span id="btn-enviar-loading" class="d-none">
-                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span> Enviando...
-                                </span>
-                            </button>
-                        </form>
-
-                        <!-- ============================================================ -->
-                        <!-- ETAPA 2: Código OTP + nova senha                            -->
-                        <!-- ============================================================ -->
+            <div class="sgpp-form-wrap">
+                <div class="sgpp-form">
+                    <div class="sgpp-step">Etapa {{ 2 if codigo_enviado else 1 }} de 2</div>
+                    <h1>Redefinir senha</h1>
+                    <p class="sgpp-sub">
+                        {% if codigo_enviado %}
+                            Digite o código enviado para <strong>{{ email }}</strong> e escolha uma nova senha.
                         {% else %}
-                        <form method="POST" action="/redefinir_senha/verificar" id="form-etapa2">
-                            <input type="hidden" name="email" value="{{ email }}">
-
-                            <!-- Bloco: código OTP -->
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-dark small text-center w-100">
-                                    <i class="bi bi-shield-check text-primary me-1"></i>
-                                    Código de Verificação (6 dígitos)
-                                    <span class="text-danger">*</span>
-                                </label>
-
-                                <!-- Inputs visuais (UX) — preenchem o campo hidden -->
-                                <div class="otp-inputs mb-2" id="otp-boxes">
-                                    <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="one-time-code" aria-label="Dígito 1">
-                                    <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Dígito 2">
-                                    <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Dígito 3">
-                                    <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Dígito 4">
-                                    <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Dígito 5">
-                                    <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Dígito 6">
-                                </div>
-                                <!-- Campo hidden que envia o valor completo -->
-                                <input type="hidden" name="codigo_otp" id="codigo-otp-hidden">
-
-                                <!-- Temporizador regressivo -->
-                                <div class="text-center mt-1">
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock me-1"></i>
-                                        Código expira em <span id="timer-otp" class="fw-semibold text-primary">15:00</span>
-                                    </small>
-                                </div>
-
-                                {% if dev_mode and codigo_dev %}
-                                <div class="alert alert-warning py-2 px-3 mt-2 small rounded-3 d-flex align-items-center gap-2">
-                                    <i class="bi bi-bug-fill text-warning flex-shrink-0 fs-5"></i>
-                                    <div>
-                                        <strong>Modo Desenvolvimento</strong> — SMTP não configurado.<br>
-                                        Código gerado: <code class="fs-6 fw-bold text-danger user-select-all">{{ codigo_dev }}</code>
-                                        <br><small>Configure SMTP_* no .env para envio real.</small>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Nova senha -->
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark small">
-                                    <i class="bi bi-lock text-primary me-1"></i> Nova Senha <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="password" name="nova_senha" id="nova_senha"
-                                           class="form-control form-control-lg auth-input border-end-0"
-                                           placeholder="Mínimo 6 caracteres"
-                                           minlength="6" required autocomplete="new-password">
-                                    <button class="btn btn-outline-secondary toggle-pwd border-start-0" type="button"
-                                            data-target="nova_senha" title="Mostrar/ocultar senha">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <!-- Barra de força da senha -->
-                                <div class="mt-2">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <small class="text-muted">Força da senha</small>
-                                        <small id="pwd-strength-label" class="fw-semibold text-muted">—</small>
-                                    </div>
-                                    <div class="bg-light rounded" style="height:4px;">
-                                        <div id="pwd-strength-bar" class="password-strength-bar" style="width:0%;background:#dee2e6;"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Confirmar senha -->
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-dark small">
-                                    <i class="bi bi-lock-fill text-primary me-1"></i> Confirmar Nova Senha <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="password" name="confirmar_senha" id="confirmar_senha"
-                                           class="form-control form-control-lg auth-input border-end-0"
-                                           placeholder="Repita a nova senha"
-                                           minlength="6" required autocomplete="new-password">
-                                    <button class="btn btn-outline-secondary toggle-pwd border-start-0" type="button"
-                                            data-target="confirmar_senha" title="Mostrar/ocultar senha">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <div id="confirm-match" class="form-text small mt-1 d-none"></div>
-                            </div>
-
-                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm" id="btn-confirmar">
-                                <i class="bi bi-check2-circle me-1"></i> Confirmar e Redefinir Senha
-                            </button>
-                        </form>
-
-                        <!-- Reenviar código -->
-                        <div class="text-center mt-3">
-                            <span class="text-muted small">Não recebeu o código?</span>
-                            <a href="/redefinir_senha?email={{ email }}" class="fw-semibold text-primary text-decoration-none ms-1 small">
-                                Reenviar código &rarr;
-                            </a>
-                        </div>
+                            Enviaremos um código de 6 dígitos para o seu e-mail.
                         {% endif %}
+                    </p>
 
-                        <!-- Voltar para Login -->
-                        <div class="text-center mt-4 pt-3 border-top">
-                            <a href="/login" class="fw-semibold text-primary text-decoration-none small">
-                                <i class="bi bi-arrow-left"></i> Voltar para a tela de Login
-                            </a>
+                    {% if erro %}
+                    <div class="sgpp-alert sgpp-alert-error" role="alert">{{ erro }}</div>
+                    {% endif %}
+                    {% if info_msg %}
+                    <div class="sgpp-alert sgpp-alert-success" role="status">{{ info_msg }}</div>
+                    {% endif %}
+                    <div class="sgpp-alert sgpp-alert-error" role="alert" id="form-error" hidden></div>
+
+                    {% if not codigo_enviado %}
+                    <!-- Etapa 1: solicitar código -->
+                    <form method="POST" action="/redefinir_senha" id="form-etapa1">
+                        <div class="sgpp-field">
+                            <label class="sgpp-label" for="email-etapa1">E-mail</label>
+                            <input type="email" name="email" id="email-etapa1" class="sgpp-input"
+                                   placeholder="nome@instituicao.edu.br" value="{{ email or '' }}"
+                                   required autofocus autocomplete="email">
+                        </div>
+                        <button type="submit" class="sgpp-btn" id="btn-enviar">Enviar código</button>
+                    </form>
+
+                    {% else %}
+                    <!-- Etapa 2: código + nova senha -->
+                    <form method="POST" action="/redefinir_senha/verificar" id="form-etapa2" novalidate>
+                        <input type="hidden" name="email" value="{{ email }}">
+                        <input type="hidden" name="codigo_otp" id="codigo-otp-hidden">
+
+                        <div class="sgpp-field">
+                            <div class="sgpp-label-row">
+                                <span class="sgpp-label">Código de verificação</span>
+                                <span class="sgpp-muted-link" id="timer-otp">15:00</span>
+                            </div>
+                            <div class="sgpp-otp" id="otp-boxes">
+                                {% for i in range(6) %}
+                                <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]"
+                                       {% if loop.first %}autocomplete="one-time-code"{% endif %}
+                                       aria-label="Dígito {{ loop.index }}">
+                                {% endfor %}
+                            </div>
+
+                            {% if dev_mode and codigo_dev %}
+                            <div class="sgpp-alert sgpp-alert-warn mt-3 mb-0">
+                                Modo desenvolvimento (SMTP não configurado). Código: <strong>{{ codigo_dev }}</strong>
+                            </div>
+                            {% endif %}
                         </div>
 
-                        <div class="text-center mt-3 text-muted" style="font-size: 0.78rem;">
-                            <i class="bi bi-shield-check text-success me-1"></i> Conexão Criptografada e Segura
+                        <div class="sgpp-field">
+                            <label class="sgpp-label" for="nova_senha">Nova senha</label>
+                            <div class="sgpp-pwd">
+                                <input type="password" name="nova_senha" id="nova_senha" class="sgpp-input"
+                                       minlength="8" required autocomplete="new-password"
+                                       data-pwd-strength data-confirm="confirmar_senha">
+                                <button type="button" class="sgpp-pwd-toggle" data-toggle-pwd="nova_senha">Mostrar</button>
+                            </div>
+                            <div class="sgpp-strength">
+                                <div class="sgpp-strength-track"><div class="sgpp-strength-bar" id="pwd-bar"></div></div>
+                                <span class="sgpp-strength-label" id="pwd-label"></span>
+                            </div>
+                            <ul class="sgpp-rules" id="pwd-rules">
+                                <li data-rule="len">8 ou mais caracteres</li>
+                                <li data-rule="upper">Letra maiúscula</li>
+                                <li data-rule="lower">Letra minúscula</li>
+                                <li data-rule="num">Número</li>
+                                <li data-rule="spec">Caractere especial</li>
+                            </ul>
                         </div>
-                    </div>
+
+                        <div class="sgpp-field">
+                            <label class="sgpp-label" for="confirmar_senha">Confirmar nova senha</label>
+                            <div class="sgpp-pwd">
+                                <input type="password" name="confirmar_senha" id="confirmar_senha" class="sgpp-input"
+                                       minlength="8" required autocomplete="new-password">
+                                <button type="button" class="sgpp-pwd-toggle" data-toggle-pwd="confirmar_senha">Mostrar</button>
+                            </div>
+                            <div class="sgpp-hint" id="pwd-match"></div>
+                        </div>
+
+                        <button type="submit" class="sgpp-btn">Redefinir senha</button>
+                    </form>
+
+                    <p class="sgpp-foot">
+                        Não recebeu? <a href="/redefinir_senha?email={{ email }}" class="sgpp-link">Reenviar código</a>
+                    </p>
+                    {% endif %}
                 </div>
             </div>
-        </div>
+        </main>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // ── Loading no botão Etapa 1 ──────────────────────────────
-    const formEtapa1 = document.getElementById('form-etapa1');
-    if (formEtapa1) {
-        formEtapa1.addEventListener('submit', () => {
-            document.getElementById('btn-enviar-text').classList.add('d-none');
-            document.getElementById('btn-enviar-loading').classList.remove('d-none');
-            document.getElementById('btn-enviar').disabled = true;
-        });
-    }
-
-    // ── Inputs OTP: navegação automática e foco ───────────────
-    const digits = document.querySelectorAll('.otp-digit');
-    const hiddenOtp = document.getElementById('codigo-otp-hidden');
-
-    function syncHidden() {
-        if (hiddenOtp) {
-            hiddenOtp.value = [...digits].map(d => d.value).join('');
+    (function () {
+        // Etapa 1: evita duplo envio
+        var f1 = document.getElementById('form-etapa1');
+        if (f1) {
+            f1.addEventListener('submit', function () {
+                var b = document.getElementById('btn-enviar');
+                b.disabled = true;
+                b.textContent = 'Enviando…';
+            });
         }
-    }
 
-    digits.forEach((el, idx) => {
-        el.addEventListener('keydown', e => {
-            if (e.key === 'Backspace' && !el.value && idx > 0) {
-                digits[idx - 1].focus();
-                digits[idx - 1].value = '';
-                syncHidden();
-            }
-        });
-        el.addEventListener('input', e => {
-            // Aceita somente dígitos
-            el.value = el.value.replace(/\D/g, '').slice(-1);
-            el.classList.toggle('filled', el.value !== '');
-            syncHidden();
-            if (el.value && idx < digits.length - 1) {
-                digits[idx + 1].focus();
-            }
-        });
-        el.addEventListener('paste', e => {
-            e.preventDefault();
-            const pasted = (e.clipboardData || window.clipboardData)
-                .getData('text').replace(/\D/g, '').slice(0, 6);
-            [...pasted].forEach((ch, i) => {
-                if (digits[i]) {
-                    digits[i].value = ch;
-                    digits[i].classList.add('filled');
+        // Etapa 2: campos do código
+        var digits = document.querySelectorAll('#otp-boxes input');
+        var hidden = document.getElementById('codigo-otp-hidden');
+        if (!digits.length) return;
+
+        function sync() { hidden.value = Array.prototype.map.call(digits, function (d) { return d.value; }).join(''); }
+
+        digits.forEach(function (el, i) {
+            el.addEventListener('input', function () {
+                el.value = el.value.replace(/\D/g, '').slice(-1);
+                sync();
+                if (el.value && i < digits.length - 1) digits[i + 1].focus();
+            });
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !el.value && i > 0) {
+                    digits[i - 1].value = '';
+                    digits[i - 1].focus();
+                    sync();
                 }
             });
-            syncHidden();
-            const next = Math.min(pasted.length, digits.length - 1);
-            digits[next].focus();
-        });
-    });
-
-    if (digits.length > 0) digits[0].focus();
-
-    // ── Validação do form etapa 2 ─────────────────────────────
-    const formEtapa2 = document.getElementById('form-etapa2');
-    if (formEtapa2) {
-        formEtapa2.addEventListener('submit', e => {
-            syncHidden();
-            if (!hiddenOtp.value || hiddenOtp.value.length < 6) {
+            el.addEventListener('paste', function (e) {
                 e.preventDefault();
-                digits.forEach(d => d.classList.add('error'));
-                setTimeout(() => digits.forEach(d => d.classList.remove('error')), 600);
+                var txt = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                txt.split('').forEach(function (c, k) { if (digits[k]) digits[k].value = c; });
+                sync();
+                digits[Math.min(txt.length, digits.length - 1)].focus();
+            });
+        });
+        digits[0].focus();
+
+        document.getElementById('form-etapa2').addEventListener('submit', function (e) {
+            sync();
+            if (hidden.value.length < 6) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                digits.forEach(function (d) { d.classList.add('error'); });
+                setTimeout(function () { digits.forEach(function (d) { d.classList.remove('error'); }); }, 800);
                 digits[0].focus();
-                return;
             }
         });
-    }
 
-    // ── Temporizador regressivo (15 min) ──────────────────────
-    const timerEl = document.getElementById('timer-otp');
-    if (timerEl) {
-        let totalSec = 15 * 60;
-        const tick = setInterval(() => {
-            totalSec--;
-            if (totalSec <= 0) {
-                clearInterval(tick);
-                timerEl.textContent = 'Expirado';
-                timerEl.classList.replace('text-primary', 'text-danger');
+        // Contagem regressiva de 15 min
+        var timer = document.getElementById('timer-otp');
+        var total = 15 * 60;
+        var t = setInterval(function () {
+            total--;
+            if (total <= 0) {
+                clearInterval(t);
+                timer.textContent = 'Expirado';
+                timer.style.color = '#dc2626';
                 return;
             }
-            const m = String(Math.floor(totalSec / 60)).padStart(2, '0');
-            const s = String(totalSec % 60).padStart(2, '0');
-            timerEl.textContent = `${m}:${s}`;
-            if (totalSec <= 60) timerEl.classList.replace('text-primary', 'text-danger');
+            var m = String(Math.floor(total / 60)).padStart(2, '0');
+            var s = String(total % 60).padStart(2, '0');
+            timer.textContent = m + ':' + s;
+            if (total <= 60) timer.style.color = '#dc2626';
         }, 1000);
-    }
-
-    // ── Mostrar/ocultar senha ─────────────────────────────────
-    document.querySelectorAll('.toggle-pwd').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const inp = document.getElementById(btn.dataset.target);
-            const icon = btn.querySelector('i');
-            if (inp.type === 'password') {
-                inp.type = 'text';
-                icon.classList.replace('bi-eye', 'bi-eye-slash');
-            } else {
-                inp.type = 'password';
-                icon.classList.replace('bi-eye-slash', 'bi-eye');
-            }
-        });
-    });
-
-    // ── Força da senha ────────────────────────────────────────
-    const pwdInput = document.getElementById('nova_senha');
-    const bar = document.getElementById('pwd-strength-bar');
-    const label = document.getElementById('pwd-strength-label');
-
-    if (pwdInput) {
-        pwdInput.addEventListener('input', () => {
-            const v = pwdInput.value;
-            let score = 0;
-            if (v.length >= 6)  score++;
-            if (v.length >= 10) score++;
-            if (/[A-Z]/.test(v)) score++;
-            if (/[0-9]/.test(v)) score++;
-            if (/[^A-Za-z0-9]/.test(v)) score++;
-
-            const levels = [
-                { pct: '0%',   color: '#dee2e6', text: '—',          cls: 'text-muted'   },
-                { pct: '25%',  color: '#dc3545', text: 'Muito fraca', cls: 'text-danger'  },
-                { pct: '50%',  color: '#fd7e14', text: 'Fraca',       cls: 'text-warning' },
-                { pct: '75%',  color: '#ffc107', text: 'Boa',         cls: 'text-warning' },
-                { pct: '90%',  color: '#20c997', text: 'Forte',       cls: 'text-success' },
-                { pct: '100%', color: '#198754', text: 'Muito forte', cls: 'text-success' },
-            ];
-            const lv = v.length === 0 ? levels[0] : levels[Math.min(score, 5)];
-            bar.style.width = lv.pct;
-            bar.style.backgroundColor = lv.color;
-            label.textContent = lv.text;
-            label.className = `fw-semibold ${lv.cls}`;
-        });
-    }
-
-    // ── Verificação de senhas coincidentes ────────────────────
-    const confirmInput = document.getElementById('confirmar_senha');
-    const matchMsg = document.getElementById('confirm-match');
-
-    if (confirmInput) {
-        confirmInput.addEventListener('input', () => {
-            if (!confirmInput.value) {
-                matchMsg.classList.add('d-none');
-                return;
-            }
-            const match = confirmInput.value === pwdInput.value;
-            matchMsg.classList.remove('d-none');
-            if (match) {
-                matchMsg.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i><span class="text-success">Senhas coincidem!</span>';
-                confirmInput.classList.remove('is-invalid');
-                confirmInput.classList.add('is-valid');
-            } else {
-                matchMsg.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i><span class="text-danger">Senhas não coincidem.</span>';
-                confirmInput.classList.remove('is-valid');
-                confirmInput.classList.add('is-invalid');
-            }
-        });
-    }
+    })();
     </script>
+    <script src="{{ url_for('static', filename='js/senha.js') }}?v=1"></script>
 </body>
+
 </html>

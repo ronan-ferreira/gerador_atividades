@@ -180,17 +180,14 @@ def atualizar_no_repositorio(item_id, curso, disciplina, conteudo, dificuldade, 
 
 def deletar_do_repositorio(item_id, usuario_id=None, perfil="professor"):
     """
-    Remove uma questão do repositório. Professores só deletam as suas próprias; admin deleta qualquer.
+    Remove uma questão do repositório pertencente ao professor autenticado.
     """
     conn, cursor = get_cursor()
     try:
-        if perfil == "admin":
-            cursor.execute("DELETE FROM repositorio_atividades WHERE id = %s", (item_id,))
-        else:
-            cursor.execute(
-                "DELETE FROM repositorio_atividades WHERE id = %s AND usuario_id = %s",
-                (item_id, usuario_id)
-            )
+        cursor.execute(
+            "DELETE FROM repositorio_atividades WHERE id = %s AND usuario_id = %s",
+            (item_id, usuario_id)
+        )
         conn.commit()
         return cursor.rowcount > 0
     finally:

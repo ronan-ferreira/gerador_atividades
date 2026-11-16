@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     perfil      VARCHAR(20) NOT NULL DEFAULT 'professor'
 );
 
-COMMENT ON TABLE usuarios IS 'Usuários do sistema (professores e administradores)';
-COMMENT ON COLUMN usuarios.perfil IS 'Perfil do usuário: professor ou admin';
+COMMENT ON TABLE usuarios IS 'Usuários do sistema (professores)';
+COMMENT ON COLUMN usuarios.perfil IS 'Perfil do usuário: professor';
 
 -- ============================================================
 -- TABELA: codigos_recuperacao (OTP para recuperação de senha)
@@ -35,7 +35,7 @@ COMMENT ON COLUMN usuarios.perfil IS 'Perfil do usuário: professor ou admin';
 CREATE TABLE IF NOT EXISTS codigos_recuperacao (
     id          SERIAL PRIMARY KEY,
     usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    codigo      VARCHAR(10) NOT NULL,
+    codigo      VARCHAR(255) NOT NULL,
     tentativas  INTEGER NOT NULL DEFAULT 0,
     usado       BOOLEAN NOT NULL DEFAULT FALSE,
     criado_em   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -4,6 +4,38 @@
 
 {% block conteudo %}
 
+<style>
+    .password-strength-bar {
+        height: 5px;
+        border-radius: 3px;
+        transition: width .3s ease, background-color .3s ease;
+    }
+    .pwd-checklist {
+        list-style: none;
+        padding-left: 0;
+        margin-bottom: 0;
+        font-size: 0.78rem;
+    }
+    .pwd-checklist li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #6c757d;
+        margin-bottom: 3px;
+        transition: color .2s ease;
+    }
+    .pwd-checklist li.valid {
+        color: #198754;
+        font-weight: 500;
+    }
+    .pwd-checklist li.invalid {
+        color: #dc3545;
+    }
+    .toggle-pwd {
+        cursor: pointer;
+    }
+</style>
+
 <div class="row justify-content-center py-4">
     <div class="col-md-7 col-lg-5">
 
@@ -34,29 +66,78 @@
                 </div>
                 {% endif %}
 
-                <form method="POST">
+                <div class="alert alert-danger py-2 px-3 mb-4 d-none align-items-center gap-2 small rounded-3" role="alert" id="client-error-alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <div id="client-error-text"></div>
+                </div>
+
+                <form method="POST" id="form-alterar-senha" novalidate>
                     <div class="mb-3">
                         <label class="form-label">
                             <i class="bi bi-shield-lock text-primary"></i> Senha Atual <span class="text-danger">*</span>
                         </label>
-                        <input type="password" name="senha_atual" class="form-control form-control-lg"
-                               placeholder="Digite sua senha atual" required autofocus>
+                        <div class="input-group">
+                            <input type="password" name="senha_atual" id="senha_atual" class="form-control form-control-lg border-end-0"
+                                   placeholder="Digite sua senha atual" required autofocus>
+                            <button class="btn btn-outline-secondary toggle-pwd border-start-0" type="button"
+                                    data-target="senha_atual" title="Mostrar/ocultar senha">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">
                             <i class="bi bi-lock text-primary"></i> Nova Senha <span class="text-danger">*</span>
                         </label>
-                        <input type="password" name="nova_senha" class="form-control form-control-lg"
-                               placeholder="Mínimo 3 caracteres" minlength="3" required>
+                        <div class="input-group">
+                            <input type="password" name="nova_senha" id="nova_senha" class="form-control form-control-lg border-end-0"
+                                   placeholder="Mínimo de 8 caracteres" minlength="8" required autocomplete="new-password">
+                            <button class="btn btn-outline-secondary toggle-pwd border-start-0" type="button"
+                                    data-target="nova_senha" title="Mostrar/ocultar senha">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+
+                        <!-- Medidor de força da senha -->
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Força da senha</small>
+                                <small id="pwd-strength-label" class="fw-semibold text-muted">&mdash;</small>
+                            </div>
+                            <div class="bg-light rounded" style="height: 5px;">
+                                <div id="pwd-strength-bar" class="password-strength-bar" style="width: 0%; background: #dee2e6;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Checklist de requisitos -->
+                        <div class="p-2.5 mt-2 rounded-3 bg-light border border-secondary border-opacity-10">
+                            <div class="small fw-semibold text-dark mb-1" style="font-size: 0.76rem;">
+                                <i class="bi bi-shield-lock text-primary me-1"></i> Requisitos de senha segura:
+                            </div>
+                            <ul class="pwd-checklist" id="pwd-checklist">
+                                <li id="req-len"><i class="bi bi-circle"></i> Mínimo de 8 caracteres</li>
+                                <li id="req-upper"><i class="bi bi-circle"></i> Pelo menos uma letra maiúscula (A-Z)</li>
+                                <li id="req-lower"><i class="bi bi-circle"></i> Pelo menos uma letra minúscula (a-z)</li>
+                                <li id="req-num"><i class="bi bi-circle"></i> Pelo menos um número (0-9)</li>
+                                <li id="req-spec"><i class="bi bi-circle"></i> Pelo menos um caractere especial (!@#$%...)</li>
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label">
                             <i class="bi bi-lock-fill text-primary"></i> Confirmar Nova Senha <span class="text-danger">*</span>
                         </label>
-                        <input type="password" name="confirmar_senha" class="form-control form-control-lg"
-                               placeholder="Repita a nova senha" minlength="3" required>
+                        <div class="input-group">
+                            <input type="password" name="confirmar_senha" id="confirmar_senha" class="form-control form-control-lg border-end-0"
+                                   placeholder="Repita a nova senha" minlength="8" required autocomplete="new-password">
+                            <button class="btn btn-outline-secondary toggle-pwd border-start-0" type="button"
+                                    data-target="confirmar_senha" title="Mostrar/ocultar senha">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div id="confirm-match" class="form-text small mt-1 d-none"></div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -74,5 +155,166 @@
 
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.toggle-pwd').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const inp = document.getElementById(btn.dataset.target);
+            const icon = btn.querySelector('i');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                inp.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        });
+    });
+
+    const pwdInput = document.getElementById('nova_senha');
+    const confirmInput = document.getElementById('confirmar_senha');
+    const bar = document.getElementById('pwd-strength-bar');
+    const label = document.getElementById('pwd-strength-label');
+    const matchMsg = document.getElementById('confirm-match');
+    const formAlterar = document.getElementById('form-alterar-senha');
+    const clientAlert = document.getElementById('client-error-alert');
+    const clientAlertText = document.getElementById('client-error-text');
+
+    const reqItems = {
+        len: document.getElementById('req-len'),
+        upper: document.getElementById('req-upper'),
+        lower: document.getElementById('req-lower'),
+        num: document.getElementById('req-num'),
+        spec: document.getElementById('req-spec')
+    };
+
+    function setReqStatus(el, ok, touched) {
+        const icon = el.querySelector('i');
+        el.classList.remove('valid', 'invalid');
+        icon.className = 'bi';
+        if (!touched) {
+            icon.classList.add('bi-circle');
+        } else if (ok) {
+            el.classList.add('valid');
+            icon.classList.add('bi-check-circle-fill');
+        } else {
+            el.classList.add('invalid');
+            icon.classList.add('bi-x-circle');
+        }
+    }
+
+    function avaliarSenha(v) {
+        const checks = {
+            len: v.length >= 8,
+            upper: /[A-ZÀ-Ý]/.test(v),
+            lower: /[a-zà-ý]/.test(v),
+            num: /[0-9]/.test(v),
+            spec: /[^A-Za-zÀ-ÿ0-9\s]/.test(v)
+        };
+        const repetida = v.length >= 8 && new Set(v).size === 1;
+        const score = Object.values(checks).filter(Boolean).length;
+        const valida = (score === 5) && !repetida;
+        return { checks, score, valida, repetida };
+    }
+
+    pwdInput.addEventListener('input', () => {
+        const v = pwdInput.value;
+        const touched = v.length > 0;
+        const { checks, score, repetida } = avaliarSenha(v);
+
+        setReqStatus(reqItems.len, checks.len, touched);
+        setReqStatus(reqItems.upper, checks.upper, touched);
+        setReqStatus(reqItems.lower, checks.lower, touched);
+        setReqStatus(reqItems.num, checks.num, touched);
+        setReqStatus(reqItems.spec, checks.spec, touched);
+
+        if (!touched) {
+            bar.style.width = '0%';
+            bar.style.backgroundColor = '#dee2e6';
+            label.textContent = '—';
+            label.className = 'fw-semibold text-muted';
+        } else if (!checks.len || score <= 2 || repetida) {
+            bar.style.width = '25%';
+            bar.style.backgroundColor = '#dc3545';
+            label.textContent = 'Muito fraca';
+            label.className = 'fw-semibold text-danger';
+        } else if (score === 3) {
+            bar.style.width = '50%';
+            bar.style.backgroundColor = '#fd7e14';
+            label.textContent = 'Fraca';
+            label.className = 'fw-semibold text-warning';
+        } else if (score === 4) {
+            bar.style.width = '75%';
+            bar.style.backgroundColor = '#ffc107';
+            label.textContent = 'Média';
+            label.className = 'fw-semibold text-warning';
+        } else if (v.length >= 12) {
+            bar.style.width = '100%';
+            bar.style.backgroundColor = '#198754';
+            label.textContent = 'Muito forte';
+            label.className = 'fw-semibold text-success';
+        } else {
+            bar.style.width = '90%';
+            bar.style.backgroundColor = '#20c997';
+            label.textContent = 'Forte';
+            label.className = 'fw-semibold text-success';
+        }
+
+        if (confirmInput.value) {
+            confirmInput.dispatchEvent(new Event('input'));
+        }
+    });
+
+    confirmInput.addEventListener('input', () => {
+        if (!confirmInput.value) {
+            matchMsg.classList.add('d-none');
+            confirmInput.classList.remove('is-valid', 'is-invalid');
+            return;
+        }
+        const match = confirmInput.value === pwdInput.value;
+        matchMsg.classList.remove('d-none');
+        if (match) {
+            matchMsg.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i><span class="text-success">Senhas coincidem!</span>';
+            confirmInput.classList.remove('is-invalid');
+            confirmInput.classList.add('is-valid');
+        } else {
+            matchMsg.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i><span class="text-danger">As senhas não coincidem.</span>';
+            confirmInput.classList.remove('is-valid');
+            confirmInput.classList.add('is-invalid');
+        }
+    });
+
+    formAlterar.addEventListener('submit', e => {
+        const v = pwdInput.value;
+        const { valida } = avaliarSenha(v);
+
+        if (v.length < 8) {
+            e.preventDefault();
+            clientAlertText.textContent = 'A nova senha deve ter no mínimo 8 caracteres.';
+            clientAlert.classList.remove('d-none');
+            clientAlert.classList.add('d-flex');
+            pwdInput.focus();
+            return;
+        }
+
+        if (!valida) {
+            e.preventDefault();
+            clientAlertText.textContent = 'Senha fraca! A nova senha deve ter pelo menos 8 caracteres, incluindo letra maiúscula, minúscula, número e caractere especial.';
+            clientAlert.classList.remove('d-none');
+            clientAlert.classList.add('d-flex');
+            pwdInput.focus();
+            return;
+        }
+
+        if (confirmInput.value !== v) {
+            e.preventDefault();
+            clientAlertText.textContent = 'A nova senha e a confirmação não conferem.';
+            clientAlert.classList.remove('d-none');
+            clientAlert.classList.add('d-flex');
+            confirmInput.focus();
+            return;
+        }
+    });
+</script>
 
 {% endblock %}

@@ -52,6 +52,9 @@ from utils.security import (
     redefinir_senha_por_email,
     solicitar_codigo_otp,
     redefinir_senha_com_otp,
+    validar_forca_senha,
+    avaliar_forca_senha,
+    TAMANHO_MINIMO_SENHA,
 )
 import os
 import re
@@ -63,10 +66,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 
-def pode_acessar_atividade(id, usuario_id, perfil):
-
-    if perfil == "admin":
-        return True
+def pode_acessar_atividade(id, usuario_id, perfil=None):
 
     conn, cursor = get_cursor()
     try:
@@ -90,8 +90,16 @@ def pode_acessar_atividade(id, usuario_id, perfil):
 
 
 # =========================
-# LOGIN
+# LOGIN & CADASTRO
 # =========================
+@app.route("/api/validar_senha", methods=["POST"])
+def api_validar_senha():
+    """Endpoint para avaliação em tempo real dos requisitos e força da senha."""
+    dados = request.get_json(silent=True) or {}
+    senha = dados.get("senha") if "senha" in dados else request.form.get("senha", "")
+    return jsonify(avaliar_forca_senha(senha or ""))
+
+
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
 
@@ -100,12 +108,32 @@ def cadastro():
         nome = request.form.get("nome", "").strip()
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
+        confirmar_senha = request.form.get("confirmar_senha")
 
         if not nome or not email or not senha:
-            return render_template("cadastro.html", erro="Preencha todos os campos obrigatórios.")
+            return render_template(
+                "cadastro.html",
+                erro="Preencha todos os campos obrigatórios.",
+                nome=nome,
+                email=email,
+            )
 
-        if len(senha) < 3:
-            return render_template("cadastro.html", erro="A senha deve conter pelo menos 3 caracteres.")
+        if confirmar_senha is not None and senha != confirmar_senha:
+            return render_template(
+                "cadastro.html",
+                erro="A confirmação de senha não confere com a senha digitada.",
+                nome=nome,
+                email=email,
+            )
+
+        senha_valida, msg_senha = validar_forca_senha(senha)
+        if not senha_valida:
+            return render_template(
+                "cadastro.html",
+                erro=msg_senha,
+                nome=nome,
+                email=email,
+            )
 
         conn, cursor = get_cursor()
         try:
@@ -114,7 +142,9 @@ def cadastro():
             if cursor.fetchone():
                 return render_template(
                     "cadastro.html",
-                    erro=f"O e-mail '{email}' já está cadastrado. Faça login ou use outro e-mail."
+                    erro=f"O e-mail '{email}' já está cadastrado. Faça login ou use outro e-mail.",
+                    nome=nome,
+                    email=email,
                 )
 
             senha_hash = gerar_hash_senha(senha)
@@ -139,7 +169,12 @@ def cadastro():
             except Exception:
                 pass
             print(f"[CADASTRO] Erro ao cadastrar usuário: {e}")
-            return render_template("cadastro.html", erro="Ocorreu um erro ao cadastrar. Tente novamente.")
+            return render_template(
+                "cadastro.html",
+                erro="Ocorreu um erro ao cadastrar. Tente novamente.",
+                nome=nome,
+                email=email,
+            )
         finally:
             release_cursor(conn, cursor)
 
@@ -177,7 +212,7 @@ def login():
 
             session["usuario_id"] = usuario[0]
             session["nome"] = usuario[1]
-            session["perfil"] = usuario[3]
+            session["perfil"] = "professor"
 
             return redirect("/dashboard")
 
@@ -269,8 +304,9 @@ def alterar_senha():
         if not senha_atual or not nova_senha or not confirmar_senha:
             return render_template("alterar_senha.html", erro="Preencha todos os campos obrigatórios.")
 
-        if len(nova_senha) < 3:
-            return render_template("alterar_senha.html", erro="A nova senha deve conter pelo menos 3 caracteres.")
+        senha_valida, msg_senha = validar_forca_senha(nova_senha)
+        if not senha_valida:
+            return render_template("alterar_senha.html", erro=msg_senha)
 
         if nova_senha != confirmar_senha:
             return render_template("alterar_senha.html", erro="A nova senha e a confirmação não conferem.")
@@ -291,86 +327,6 @@ def alterar_senha():
             return render_template("alterar_senha.html", erro="Erro ao atualizar a senha no banco de dados.")
 
     return render_template("alterar_senha.html")
-
-
-# ============================================================
-# GESTÃO DE USUÁRIOS (PAINEL ADMINISTRATIVO)
-# ============================================================
-@app.route("/usuarios")
-def listar_usuarios():
-    if "usuario_id" not in session:
-        return redirect("/login")
-
-    if session.get("perfil") != "admin":
-        return redirect("/dashboard")
-
-    conn, cursor = get_cursor()
-    try:
-        cursor.execute("""
-            SELECT u.id, u.nome, u.email, u.perfil,
-                   COALESCE((SELECT COUNT(*) FROM atividades a WHERE a.usuario_id = u.id), 0) AS total_atividades,
-                   COALESCE((SELECT COUNT(*) FROM planejamentos_docente p WHERE p.usuario_id = u.id), 0) AS total_planejamentos
-            FROM usuarios u
-            ORDER BY u.id ASC
-        """)
-        usuarios = cursor.fetchall()
-    finally:
-        release_cursor(conn, cursor)
-
-    return render_template("usuarios.html", usuarios=usuarios)
-
-
-@app.route("/admin/redefinir_senha/<int:id>", methods=["POST"])
-def admin_redefinir_senha(id):
-    if "usuario_id" not in session or session.get("perfil") != "admin":
-        return redirect("/login")
-
-    nova_senha = request.form.get("nova_senha", "").strip()
-    if not nova_senha or len(nova_senha) < 3:
-        return redirect("/usuarios?erro=senha_curta")
-
-    redefinir_senha_usuario(id, nova_senha)
-    return redirect("/usuarios?sucesso=senha_redefinida")
-
-
-@app.route("/admin/alterar_perfil/<int:id>", methods=["POST"])
-def admin_alterar_perfil(id):
-    if "usuario_id" not in session or session.get("perfil") != "admin":
-        return redirect("/login")
-
-    if id == session["usuario_id"]:
-        return redirect("/usuarios?erro=proprio_usuario")
-
-    novo_perfil = request.form.get("perfil", "professor").strip().lower()
-    if novo_perfil not in ("admin", "professor"):
-        novo_perfil = "professor"
-
-    conn, cursor = get_cursor()
-    try:
-        cursor.execute("UPDATE usuarios SET perfil = %s WHERE id = %s", (novo_perfil, id))
-        conn.commit()
-    finally:
-        release_cursor(conn, cursor)
-
-    return redirect("/usuarios?sucesso=perfil_atualizado")
-
-
-@app.route("/admin/deletar_usuario/<int:id>", methods=["POST", "GET"])
-def admin_deletar_usuario(id):
-    if "usuario_id" not in session or session.get("perfil") != "admin":
-        return redirect("/login")
-
-    if id == session["usuario_id"]:
-        return redirect("/usuarios?erro=proprio_usuario")
-
-    conn, cursor = get_cursor()
-    try:
-        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
-        conn.commit()
-    finally:
-        release_cursor(conn, cursor)
-
-    return redirect("/usuarios?sucesso=usuario_excluido")
 
 
 # =========================
@@ -943,100 +899,59 @@ def atividades():
 
     conn, cursor = get_cursor()
     try:
-        if session["perfil"] == "admin":
-            if busca:
-                cursor.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM atividades
-                    WHERE curso ILIKE %s
-                       OR disciplina ILIKE %s
-                       OR conteudo ILIKE %s
-                    """,
-                    (f"%{busca}%", f"%{busca}%", f"%{busca}%"),
-                )
-                total_itens = cursor.fetchone()[0]
+        usuario_id = session["usuario_id"]
+        if busca:
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM atividades
+                WHERE usuario_id = %s
+                  AND (
+                        curso ILIKE %s
+                     OR disciplina ILIKE %s
+                     OR conteudo ILIKE %s
+                  )
+                """,
+                (usuario_id, f"%{busca}%", f"%{busca}%", f"%{busca}%"),
+            )
+            total_itens = cursor.fetchone()[0]
 
-                cursor.execute(
-                    """
-                    SELECT *
-                    FROM atividades
-                    WHERE curso ILIKE %s
-                       OR disciplina ILIKE %s
-                       OR conteudo ILIKE %s
-                    ORDER BY id DESC
-                    LIMIT %s OFFSET %s
-                    """,
-                    (f"%{busca}%", f"%{busca}%", f"%{busca}%", por_pagina, offset),
-                )
-            else:
-                cursor.execute("SELECT COUNT(*) FROM atividades")
-                total_itens = cursor.fetchone()[0]
-
-                cursor.execute(
-                    """
-                    SELECT *
-                    FROM atividades
-                    ORDER BY id DESC
-                    LIMIT %s OFFSET %s
-                    """,
-                    (por_pagina, offset),
-                )
-
+            cursor.execute(
+                """
+                SELECT *
+                FROM atividades
+                WHERE usuario_id = %s
+                  AND (
+                        curso ILIKE %s
+                     OR disciplina ILIKE %s
+                     OR conteudo ILIKE %s
+                  )
+                ORDER BY id DESC
+                LIMIT %s OFFSET %s
+                """,
+                (
+                    usuario_id,
+                    f"%{busca}%",
+                    f"%{busca}%",
+                    f"%{busca}%",
+                    por_pagina,
+                    offset
+                ),
+            )
         else:
-            usuario_id = session["usuario_id"]
-            if busca:
-                cursor.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM atividades
-                    WHERE usuario_id = %s
-                      AND (
-                            curso ILIKE %s
-                         OR disciplina ILIKE %s
-                         OR conteudo ILIKE %s
-                      )
-                    """,
-                    (usuario_id, f"%{busca}%", f"%{busca}%", f"%{busca}%"),
-                )
-                total_itens = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM atividades WHERE usuario_id = %s", (usuario_id,))
+            total_itens = cursor.fetchone()[0]
 
-                cursor.execute(
-                    """
-                    SELECT *
-                    FROM atividades
-                    WHERE usuario_id = %s
-                      AND (
-                            curso ILIKE %s
-                         OR disciplina ILIKE %s
-                         OR conteudo ILIKE %s
-                      )
-                    ORDER BY id DESC
-                    LIMIT %s OFFSET %s
-                    """,
-                    (
-                        usuario_id,
-                        f"%{busca}%",
-                        f"%{busca}%",
-                        f"%{busca}%",
-                        por_pagina,
-                        offset
-                    ),
-                )
-            else:
-                cursor.execute("SELECT COUNT(*) FROM atividades WHERE usuario_id = %s", (usuario_id,))
-                total_itens = cursor.fetchone()[0]
-
-                cursor.execute(
-                    """
-                    SELECT *
-                    FROM atividades
-                    WHERE usuario_id = %s
-                    ORDER BY id DESC
-                    LIMIT %s OFFSET %s
-                    """,
-                    (usuario_id, por_pagina, offset),
-                )
+            cursor.execute(
+                """
+                SELECT *
+                FROM atividades
+                WHERE usuario_id = %s
+                ORDER BY id DESC
+                LIMIT %s OFFSET %s
+                """,
+                (usuario_id, por_pagina, offset),
+            )
 
         dados = cursor.fetchall()
         total_paginas = max(1, -(-total_itens // por_pagina))
@@ -1390,60 +1305,33 @@ def dashboard():
 
     conn, cursor = get_cursor()
     try:
-        if session["perfil"] == "admin":
+        usuario_id = session["usuario_id"]
 
-            cursor.execute(
-                """
-                SELECT
-                    curso,
-                    COUNT(*)
-                FROM atividades
-                GROUP BY curso
-                ORDER BY curso
-                """
-            )
-            cursos = cursor.fetchall()
+        cursor.execute(
+            """
+            SELECT
+                curso,
+                COUNT(*)
+            FROM atividades
+            WHERE usuario_id = %s
+            GROUP BY curso
+            ORDER BY curso
+            """,
+            (usuario_id,),
+        )
+        cursos = cursor.fetchall()
 
-            cursor.execute("SELECT COUNT(*) FROM atividades")
-            total_atividades = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM atividades WHERE usuario_id = %s", (usuario_id,))
+        total_atividades = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COUNT(*) FROM planejamentos_docente")
-            total_planejamentos = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM planejamentos_docente WHERE usuario_id = %s", (usuario_id,))
+        total_planejamentos = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COUNT(*) FROM planos_aula")
-            total_planos = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM planos_aula WHERE usuario_id = %s", (usuario_id,))
+        total_planos = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COUNT(*) FROM cursos_plano")
-            total_cursos_plano = cursor.fetchone()[0]
-
-        else:
-            usuario_id = session["usuario_id"]
-
-            cursor.execute(
-                """
-                SELECT
-                    curso,
-                    COUNT(*)
-                FROM atividades
-                WHERE usuario_id = %s
-                GROUP BY curso
-                ORDER BY curso
-                """,
-                (usuario_id,),
-            )
-            cursos = cursor.fetchall()
-
-            cursor.execute("SELECT COUNT(*) FROM atividades WHERE usuario_id = %s", (usuario_id,))
-            total_atividades = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM planejamentos_docente WHERE usuario_id = %s", (usuario_id,))
-            total_planejamentos = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM planos_aula WHERE usuario_id = %s", (usuario_id,))
-            total_planos = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM cursos_plano WHERE usuario_id = %s", (usuario_id,))
-            total_cursos_plano = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM cursos_plano WHERE usuario_id = %s", (usuario_id,))
+        total_cursos_plano = cursor.fetchone()[0]
 
     finally:
         release_cursor(conn, cursor)
@@ -1672,27 +1560,16 @@ def listar_cursos():
 
     conn, cursor = get_cursor()
     try:
-        if session["perfil"] == "admin":
 
-            cursor.execute(
-                """
-                SELECT *
-                FROM cursos_plano
-                ORDER BY id DESC
-                """
-            )
-
-        else:
-
-            cursor.execute(
-                """
-                SELECT *
-                FROM cursos_plano
-                WHERE usuario_id = %s
-                ORDER BY id DESC
-                """,
-                (session["usuario_id"],),
-            )
+        cursor.execute(
+            """
+            SELECT *
+            FROM cursos_plano
+            WHERE usuario_id = %s
+            ORDER BY id DESC
+            """,
+            (session["usuario_id"],),
+        )
 
         cursos = cursor.fetchall()
     finally:
@@ -1716,16 +1593,10 @@ def deletar_curso(curso_id):
     conn, cursor = get_cursor()
     try:
         # Verifica se o curso pertence ao usuario (ou se Ã© admin)
-        if session["perfil"] == "admin":
-            cursor.execute(
-                "SELECT id FROM cursos_plano WHERE id = %s",
-                (curso_id,)
-            )
-        else:
-            cursor.execute(
-                "SELECT id FROM cursos_plano WHERE id = %s AND usuario_id = %s",
-                (curso_id, session["usuario_id"])
-            )
+        cursor.execute(
+            "SELECT id FROM cursos_plano WHERE id = %s AND usuario_id = %s",
+            (curso_id, session["usuario_id"])
+        )
 
         curso = cursor.fetchone()
         if not curso:
@@ -2287,7 +2158,7 @@ def deletar_plano(plano_id):
         dono_id = plano[1]
 
         # Verifica permissÃ£o: admin ou dono
-        if session["perfil"] != "admin" and dono_id != session["usuario_id"]:
+        if dono_id != session["usuario_id"]:
             return "Acesso negado", 403
 
         # Deleta o plano
@@ -2620,10 +2491,7 @@ def listar_planejamentos():
             FROM planejamentos_docente p
         """
 
-        if session["perfil"] == "admin":
-            cursor.execute(sql_select + " ORDER BY p.id DESC")
-        else:
-            cursor.execute(sql_select + " WHERE p.usuario_id = %s ORDER BY p.id DESC", (session["usuario_id"],))
+        cursor.execute(sql_select + " WHERE p.usuario_id = %s ORDER BY p.id DESC", (session["usuario_id"],))
 
         planejamentos = cursor.fetchall()
     finally:
@@ -2646,16 +2514,10 @@ def baixar_planejamento(planejamento_id):
 
     conn, cursor = get_cursor()
     try:
-        if session["perfil"] == "admin":
-            cursor.execute(
-                "SELECT id, arquivo_excel FROM planejamentos_docente WHERE id = %s",
-                (planejamento_id,)
-            )
-        else:
-            cursor.execute(
-                "SELECT id, arquivo_excel FROM planejamentos_docente WHERE id = %s AND usuario_id = %s",
-                (planejamento_id, session["usuario_id"])
-            )
+        cursor.execute(
+            "SELECT id, arquivo_excel FROM planejamentos_docente WHERE id = %s AND usuario_id = %s",
+            (planejamento_id, session["usuario_id"])
+        )
         planejamento = cursor.fetchone()
     finally:
         release_cursor(conn, cursor)
@@ -2687,16 +2549,10 @@ def deletar_planejamento(planejamento_id):
 
     conn, cursor = get_cursor()
     try:
-        if session["perfil"] == "admin":
-            cursor.execute(
-                "SELECT id, arquivo_excel FROM planejamentos_docente WHERE id = %s",
-                (planejamento_id,)
-            )
-        else:
-            cursor.execute(
-                "SELECT id, arquivo_excel FROM planejamentos_docente WHERE id = %s AND usuario_id = %s",
-                (planejamento_id, session["usuario_id"])
-            )
+        cursor.execute(
+            "SELECT id, arquivo_excel FROM planejamentos_docente WHERE id = %s AND usuario_id = %s",
+            (planejamento_id, session["usuario_id"])
+        )
         planejamento = cursor.fetchone()
 
         if not planejamento:
@@ -2752,7 +2608,7 @@ def gerar_planos_planejamento(planejamento_id):
         return "Planejamento não encontrado", 404
 
     # Verifica permissão: dono ou admin
-    if session.get("perfil") != "admin" and plan[11] != session["usuario_id"]:
+    if plan[11] != session["usuario_id"]:
         return "Acesso não autorizado", 403
 
     p_id = plan[0]

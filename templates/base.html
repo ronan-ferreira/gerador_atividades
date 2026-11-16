@@ -106,23 +106,14 @@
                         <span>Repositório</span>
                     </a>
                 </li>
-
-                {% if session.get('perfil') == 'admin' %}
-                <li class="nav-item">
-                    <a class="nav-link nav-link-modern {% if request.path == '/usuarios' %}active{% endif %}" href="/usuarios">
-                        <i class="bi bi-people"></i>
-                        <span>Usuários</span>
-                    </a>
-                </li>
-                {% endif %}
             </ul>
 
             <div class="d-flex flex-wrap align-items-center justify-content-between justify-content-lg-end gap-2 pt-3 pt-lg-0 mt-2 mt-lg-0 border-top border-secondary border-opacity-25 border-lg-0">
                 <div class="dropdown">
                     <button class="btn user-profile-badge border-0 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle fs-5 text-info"></i>
-                        <span>{{ session.get('nome', 'Usuário') }}</span>
-                        <span class="badge bg-primary text-white rounded-pill px-2 py-0 small ms-1">{{ session.get('perfil', 'docente')|capitalize }}</span>
+                        <span>{{ session.get('nome', 'Professor') }}</span>
+                        <span class="badge bg-primary text-white rounded-pill px-2 py-0 small ms-1">Professor</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li>
@@ -130,13 +121,6 @@
                                 <i class="bi bi-key text-primary"></i> Alterar Minha Senha
                             </a>
                         </li>
-                        {% if session.get('perfil') == 'admin' %}
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="/usuarios">
-                                <i class="bi bi-people text-primary"></i> Gestão de Usuários
-                            </a>
-                        </li>
-                        {% endif %}
                         <li><hr class="dropdown-divider my-1"></li>
                         <li>
                             <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" href="/logout">

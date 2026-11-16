@@ -1,4 +1,5 @@
 import os
+import re
 import secrets
 from datetime import datetime, timedelta
 import bcrypt
@@ -7,11 +8,119 @@ from utils.email_service import enviar_email_codigo_recuperacao, smtp_configurad
 
 
 # ============================================================
+# Política e Validação de Força de Senha
+# ============================================================
+
+TAMANHO_MINIMO_SENHA = 8
+
+
+def avaliar_forca_senha(senha: str) -> dict:
+    """
+    Avalia os critérios de segurança e força de uma senha.
+    Retorna um dicionário detalhado com o status de cada requisito,
+    pontuação (0 a 5), classificação e mensagens de erro.
+    """
+    senha_str = senha or ""
+
+    req_tamanho = len(senha_str) >= TAMANHO_MINIMO_SENHA
+    req_maiuscula = bool(re.search(r"[A-ZÀ-Ý]", senha_str))
+    req_minuscula = bool(re.search(r"[a-zà-ý]", senha_str))
+    req_numero = bool(re.search(r"[0-9]", senha_str))
+    req_especial = bool(re.search(r"[^A-Za-zÀ-ÿ0-9\s]", senha_str))
+
+    requisitos = {
+        "tamanho_minimo": req_tamanho,
+        "letra_maiuscula": req_maiuscula,
+        "letra_minuscula": req_minuscula,
+        "numero": req_numero,
+        "caractere_especial": req_especial,
+    }
+
+    pontuacao = sum(1 for ok in requisitos.values() if ok)
+
+    faltantes = []
+    if not req_tamanho:
+        faltantes.append(f"no mínimo {TAMANHO_MINIMO_SENHA} caracteres")
+    if not req_maiuscula:
+        faltantes.append("uma letra maiúscula (A-Z)")
+    if not req_minuscula:
+        faltantes.append("uma letra minúscula (a-z)")
+    if not req_numero:
+        faltantes.append("um número (0-9)")
+    if not req_especial:
+        faltantes.append("um caractere especial (ex: !, @, #, $, %)")
+
+    # Verifica repetição de um único caractere (ex: "aaaaaaaa")
+    repetida = len(senha_str) >= TAMANHO_MINIMO_SENHA and len(set(senha_str)) == 1
+    if repetida:
+        faltantes.append("caracteres variados (não repita o mesmo caractere)")
+
+    valida = (pontuacao == 5) and not repetida
+
+    if len(senha_str) == 0:
+        nivel = "—"
+    elif not req_tamanho or pontuacao <= 2 or repetida:
+        nivel = "Muito fraca"
+    elif pontuacao == 3:
+        nivel = "Fraca"
+    elif pontuacao == 4:
+        nivel = "Média"
+    elif len(senha_str) >= 12:
+        nivel = "Muito forte"
+    else:
+        nivel = "Forte"
+
+    if valida:
+        mensagem = "Senha forte e válida."
+    elif len(senha_str) < TAMANHO_MINIMO_SENHA:
+        if len(faltantes) > 1:
+            demais = ", ".join(faltantes[1:])
+            mensagem = (
+                f"A senha deve ter no mínimo {TAMANHO_MINIMO_SENHA} caracteres. "
+                f"Senha fraca: também precisa conter pelo menos {demais}."
+            )
+        else:
+            mensagem = f"A senha deve ter no mínimo {TAMANHO_MINIMO_SENHA} caracteres."
+    else:
+        itens_str = ", ".join(faltantes)
+        mensagem = f"Senha fraca! Para sua segurança, a senha deve conter pelo menos: {itens_str}."
+
+    return {
+        "valida": valida,
+        "pontuacao": pontuacao,
+        "nivel": nivel,
+        "tamanho": len(senha_str),
+        "tamanho_minimo": TAMANHO_MINIMO_SENHA,
+        "requisitos": requisitos,
+        "faltantes": faltantes,
+        "mensagem": mensagem,
+    }
+
+
+def validar_forca_senha(senha: str) -> tuple[bool, str]:
+    """
+    Valida se a senha atende aos requisitos mínimos de segurança:
+    - Mínimo de 8 caracteres
+    - Pelo menos 1 letra maiúscula
+    - Pelo menos 1 letra minúscula
+    - Pelo menos 1 número
+    - Pelo menos 1 caractere especial
+
+    Retorna: (valida: bool, mensagem: str)
+    """
+    if not senha:
+        return False, f"Informe uma senha válida com no mínimo {TAMANHO_MINIMO_SENHA} caracteres."
+
+    avaliacao = avaliar_forca_senha(senha)
+    return avaliacao["valida"], avaliacao["mensagem"]
+
+
+# ============================================================
 # Hash de senha
 # ============================================================
 
 def gerar_hash_senha(senha: str) -> str:
-    """Gera um hash bcrypt seguro para a senha."""
+    """Gera um hash bcrypt seguro para a senha ou token."""
     if not senha:
         return ""
     salt = bcrypt.gensalt(rounds=12)
@@ -21,7 +130,7 @@ def gerar_hash_senha(senha: str) -> str:
 def verificar_senha(senha_candidata: str, senha_armazenada: str) -> bool:
     """
     Verifica a senha informada contra a armazenada.
-    Suporta tanto hashes bcrypt ($2a$, $2b$) quanto migração suave
+    Suporta tanto hashes bcrypt ($2a$, $2b$, $2y$) quanto migração suave
     de senhas legadas que ainda estavam em texto puro.
     """
     if not senha_candidata or not senha_armazenada:
@@ -36,8 +145,8 @@ def verificar_senha(senha_candidata: str, senha_armazenada: str) -> bool:
         except Exception:
             return False
 
-    # Fallback para senhas legadas em texto puro
-    return senha_candidata == senha_armazenada
+    # Fallback para senhas legadas em texto puro (comparação em tempo constante)
+    return secrets.compare_digest(senha_candidata, senha_armazenada)
 
 
 def atualizar_senha_para_hash_se_necessario(usuario_id: int, senha_plana: str, senha_armazenada: str):
@@ -65,8 +174,9 @@ def atualizar_senha_para_hash_se_necessario(usuario_id: int, senha_plana: str, s
 # ============================================================
 
 def redefinir_senha_usuario(usuario_id: int, nova_senha: str) -> bool:
-    """Atualiza a senha de um usuário no banco com hash seguro bcrypt."""
-    if not nova_senha:
+    """Atualiza a senha de um usuário no banco com hash seguro bcrypt após validar força."""
+    valida, _ = validar_forca_senha(nova_senha)
+    if not valida:
         return False
     novo_hash = gerar_hash_senha(nova_senha)
     conn, cursor = get_cursor()
@@ -83,7 +193,10 @@ def redefinir_senha_usuario(usuario_id: int, nova_senha: str) -> bool:
 
 def redefinir_senha_por_email(email: str, nova_senha: str) -> bool:
     """Atualiza a senha de um usuário através do e-mail cadastrado (uso interno/admin)."""
-    if not email or not nova_senha:
+    if not email:
+        return False
+    valida, _ = validar_forca_senha(nova_senha)
+    if not valida:
         return False
     novo_hash = gerar_hash_senha(nova_senha)
     conn, cursor = get_cursor()
@@ -105,6 +218,7 @@ def redefinir_senha_por_email(email: str, nova_senha: str) -> bool:
 def solicitar_codigo_otp(email: str) -> tuple[bool, str, dict]:
     """
     Gera e envia um código de verificação OTP de 6 dígitos para o e-mail informado.
+    O código OTP é armazenado com hash bcrypt no banco de dados.
     Implementa rate limiting e proteção contra enumeração de usuários.
 
     Retorna: (sucesso, mensagem, info_dict)
@@ -149,13 +263,14 @@ def solicitar_codigo_otp(email: str) -> tuple[bool, str, dict]:
             (usuario_id,)
         )
 
-        # Gera código numérico de 6 dígitos criptograficamente seguro
+        # Gera código numérico de 6 dígitos criptograficamente seguro e armazena seu hash
         codigo_otp = f"{secrets.randbelow(900000) + 100000:06d}"
+        codigo_hash = gerar_hash_senha(codigo_otp)
         expira_em = datetime.now() + timedelta(minutes=15)
 
         cursor.execute(
             "INSERT INTO codigos_recuperacao (usuario_id, codigo, expira_em) VALUES (%s, %s, %s)",
-            (usuario_id, codigo_otp, expira_em)
+            (usuario_id, codigo_hash, expira_em)
         )
         conn.commit()
 
@@ -180,6 +295,7 @@ def solicitar_codigo_otp(email: str) -> tuple[bool, str, dict]:
 def redefinir_senha_com_otp(email: str, codigo: str, nova_senha: str, confirmar_senha: str) -> tuple[bool, str]:
     """
     Valida o código OTP e define a nova senha do usuário com hash bcrypt.
+    Exige senha forte com no mínimo 8 caracteres.
     Controla validade de 15 min e máximo de 5 tentativas incorretas.
 
     Retorna: (sucesso, mensagem)
@@ -190,8 +306,9 @@ def redefinir_senha_com_otp(email: str, codigo: str, nova_senha: str, confirmar_
     if not email_limpo or not codigo_limpo or not nova_senha or not confirmar_senha:
         return False, "Preencha todos os campos obrigatórios."
 
-    if len(nova_senha) < 6:
-        return False, "A nova senha deve ter no mínimo 6 caracteres para garantir a segurança."
+    senha_valida, msg_senha = validar_forca_senha(nova_senha)
+    if not senha_valida:
+        return False, msg_senha
 
     if nova_senha != confirmar_senha:
         return False, "A confirmação de senha não confere com a nova senha digitada."
@@ -220,7 +337,7 @@ def redefinir_senha_com_otp(email: str, codigo: str, nova_senha: str, confirmar_
         if not registro:
             return False, "Nenhum código ativo encontrado para este e-mail. Solicite um novo código."
 
-        codigo_id, codigo_correto, tentativas, expira_em = registro
+        codigo_id, codigo_armazenado, tentativas, expira_em = registro
 
         # Verifica expiração
         if datetime.now() > expira_em:
@@ -234,8 +351,8 @@ def redefinir_senha_com_otp(email: str, codigo: str, nova_senha: str, confirmar_
             conn.commit()
             return False, "Número máximo de tentativas excedido. Solicite um novo código."
 
-        # Verifica o código
-        if codigo_limpo != str(codigo_correto).strip():
+        # Verifica o código (suporta hash bcrypt e texto puro legado)
+        if not verificar_senha(codigo_limpo, str(codigo_armazenado).strip()):
             novas_tentativas = tentativas + 1
             cursor.execute(
                 "UPDATE codigos_recuperacao SET tentativas = %s WHERE id = %s",

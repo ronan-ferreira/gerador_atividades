@@ -565,222 +565,336 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================================
-   PÁGINAS DE LOGIN & CADASTRO
+   TELAS DE AUTENTICAÇÃO (LOGIN, CADASTRO, RECUPERAÇÃO)
    ============================================================ */
 
-.auth-wrapper {
-    min-height: 100vh;
+/* Usado também em páginas internas (estado vazio) */
+.auth-card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: #f1f5f9;
+    color: #0f2942;
     display: flex;
-    background: #f8fafc;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
 }
 
-.auth-sidebar {
-    background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 50%, #e2e8f0 100%);
-    color: var(--text-primary);
-    padding: 36px 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    border-right: 1px solid rgba(226, 232, 240, 0.9);
-    min-height: 100vh;
-}
-
-.auth-sidebar-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    height: 100%;
+.sgpp-auth {
     width: 100%;
-    max-width: 480px;
-}
-
-.auth-hero-copy {
-    max-width: 460px;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.auth-main-title {
-    font-size: clamp(1.75rem, 2.3vw, 2.35rem);
-    line-height: 1.2;
-    letter-spacing: -0.025em;
-    font-weight: 800;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 1fr;
+    background: #ffffff;
     color: #0f172a;
 }
 
-.auth-main-subtitle {
-    font-size: clamp(0.92rem, 1.15vw, 1.05rem);
-    line-height: 1.55;
+/* Painel lateral (apenas desktop) */
+.sgpp-aside {
+    display: none;
+    background: #0f2942;
+    color: #cbd5e1;
+    padding: 40px 48px;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.sgpp-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+
+.sgpp-aside .sgpp-brand { color: #ffffff; }
+.sgpp-main .sgpp-brand  { color: #0f172a; }
+
+.sgpp-aside-text h2 {
+    color: #ffffff;
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    max-width: 22ch;
+    margin-bottom: 14px;
+}
+
+.sgpp-aside-text p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 40ch;
+    margin: 0;
+}
+
+.sgpp-aside-foot {
+    font-size: 0.8rem;
     color: #64748b;
 }
 
-.auth-illustration-container {
+/* Área do formulário */
+.sgpp-main {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    min-width: 0;
+}
+
+.sgpp-main-top {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 16px 0;
-    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.875rem;
+    color: #64748b;
 }
 
-.auth-illustration {
-    max-width: 82%;
-    max-height: 290px;
-    object-fit: contain;
-    filter: drop-shadow(0 14px 28px rgba(0, 91, 170, 0.12));
-    transition: transform 0.3s ease;
-}
-
-.auth-illustration:hover {
-    transform: translateY(-4px) scale(1.02);
-}
-
-.auth-sidebar-brand {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin-bottom: 20px;
-    padding: 8px 18px;
-    background: rgba(255, 255, 255, 0.75);
-    border: 1px solid rgba(226, 232, 240, 0.85);
-    border-radius: 14px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
-    backdrop-filter: blur(6px);
-    transition: all 0.25s ease;
-}
-
-.auth-sidebar-brand:hover {
-    background: #ffffff;
-    box-shadow: 0 6px 18px rgba(0, 91, 170, 0.08);
-    transform: translateY(-1px);
-}
-
-.auth-sidebar-footer {
-    width: 100%;
-    max-width: 480px;
-    text-align: center;
-}
-
-/* Pílulas de recursos no painel lateral */
-.auth-feature-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    color: #334155;
-    padding: 6px 14px;
-    border-radius: 9999px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-    transition: all 0.2s ease;
-}
-
-.auth-feature-pill:hover {
-    border-color: #005baa;
-    color: #005baa;
-    transform: translateY(-1px);
-}
-
-.auth-main {
+.sgpp-form-wrap {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 24px;
+    padding: 40px 0;
 }
 
-.auth-card {
-    background: #ffffff;
+.sgpp-form {
     width: 100%;
-    max-width: 470px;
-    border-radius: var(--radius-xl);
-    padding: 42px 36px;
-    box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.03);
-    border: 1px solid rgba(226, 232, 240, 0.9);
+    max-width: 380px;
 }
 
-.auth-card-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 18px;
-    background: #e0f2fe;
-    color: #0284c7;
+.sgpp-form h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+}
+
+.sgpp-sub {
+    color: #64748b;
+    font-size: 0.925rem;
+    margin-bottom: 28px;
+}
+
+.sgpp-field { margin-bottom: 18px; }
+
+.sgpp-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+}
+
+.sgpp-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.sgpp-label-row .sgpp-label { margin-bottom: 0; }
+
+.sgpp-input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid #d5dbe3;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    background: #ffffff;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.sgpp-input:focus {
+    outline: none;
+    border-color: #0f2942;
+    box-shadow: 0 0 0 3px rgba(15, 41, 66, 0.08);
+}
+
+.sgpp-input.is-invalid { border-color: #dc2626; }
+
+.sgpp-pwd { position: relative; }
+.sgpp-pwd .sgpp-input { padding-right: 76px; }
+
+.sgpp-pwd-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.sgpp-pwd-toggle:hover { color: #0f172a; background: #f1f5f9; }
+
+.sgpp-btn {
+    width: 100%;
+    height: 44px;
+    border: 0;
+    border-radius: 8px;
+    background: #0f2942;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+    margin-top: 6px;
+}
+
+.sgpp-btn:hover, .sgpp-btn:focus-visible { background: #1d3d5f; }
+.sgpp-btn:disabled { opacity: .6; cursor: default; }
+
+.sgpp-link {
+    color: #0f2942;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.sgpp-link:hover { text-decoration: underline; }
+
+.sgpp-muted-link {
+    color: #64748b;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.sgpp-muted-link:hover { color: #0f172a; }
+
+.sgpp-alert {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    margin-bottom: 20px;
+    border: 1px solid;
+}
+
+.sgpp-alert-error   { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.sgpp-alert-success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.sgpp-alert-warn    { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+
+.sgpp-foot {
+    margin-top: 24px;
+    font-size: 0.875rem;
+    color: #64748b;
+    text-align: center;
+}
+
+/* Força da senha */
+.sgpp-strength {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    margin: 0 auto 18px;
-    box-shadow: 0 8px 16px -4px rgba(2, 132, 199, 0.2);
+    gap: 10px;
+    margin-top: 8px;
 }
 
-.auth-input {
-    border-radius: 12px;
-    border: 1.5px solid #e2e8f0;
-    padding: 12px 16px;
-    font-size: 0.98rem;
-    transition: all 0.2s ease;
+.sgpp-strength-track {
+    flex: 1;
+    height: 3px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
 }
 
-.auth-input:focus {
-    border-color: #005baa;
-    box-shadow: 0 0 0 4px rgba(0, 91, 170, 0.12);
+.sgpp-strength-bar {
+    height: 100%;
+    width: 0;
+    background: #e2e8f0;
+    transition: width .2s, background-color .2s;
 }
 
-.auth-btn-submit {
+.sgpp-strength-label {
+    font-size: 0.78rem;
+    color: #64748b;
+    min-width: 52px;
+    text-align: right;
+}
+
+.sgpp-rules {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+.sgpp-rules li::before {
+    content: "–";
+    display: inline-block;
+    width: 14px;
+}
+
+.sgpp-rules li.ok { color: #15803d; }
+.sgpp-rules li.ok::before { content: "✓"; }
+
+.sgpp-hint {
+    font-size: 0.8rem;
+    margin-top: 6px;
+    min-height: 1em;
+}
+
+/* Código OTP */
+.sgpp-otp {
+    display: flex;
+    gap: 8px;
+}
+
+.sgpp-otp input {
+    flex: 1;
+    min-width: 0;
     height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    font-size: 1.02rem;
-    letter-spacing: 0.01em;
-    background: linear-gradient(135deg, #005baa 0%, #004580 100%);
-    border: none;
-    box-shadow: 0 8px 18px rgba(0, 91, 170, 0.25);
-    transition: all 0.25s ease;
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border: 1px solid #d5dbe3;
+    border-radius: 8px;
+    font-variant-numeric: tabular-nums;
 }
 
-.auth-btn-submit:hover {
-    background: linear-gradient(135deg, #004d90 0%, #003766 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 10px 22px rgba(0, 91, 170, 0.35);
+.sgpp-otp input:focus {
+    outline: none;
+    border-color: #0f2942;
+    box-shadow: 0 0 0 3px rgba(15, 41, 66, 0.08);
 }
 
-/* ============================================================
-   CENTRALIZAÇÃO EM TELAS DESKTOP (LG+)
-   Cada painel centraliza seu conteúdo dentro do próprio bloco
-   ============================================================ */
+.sgpp-otp input.error { border-color: #dc2626; }
+
+.sgpp-step {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
 @media (min-width: 992px) {
-    .auth-sidebar {
-        align-items: center;
-        padding: 48px 40px;
-    }
+    .sgpp-auth { grid-template-columns: 5fr 7fr; }
+    .sgpp-aside { display: flex; }
+    .sgpp-main { padding: 32px 48px; }
+    .sgpp-main-top { justify-content: flex-end; }
+    .sgpp-main-top .sgpp-brand { display: none; }
+}
 
-    .auth-sidebar-content {
-        margin-right: 0;
-        align-items: center;
-    }
-
-    .auth-sidebar-footer {
-        margin-right: 0;
-        text-align: center;
-    }
-
-    .auth-main {
-        justify-content: center;
-        padding: 40px 40px;
-    }
-
-    .auth-card {
-        margin-left: 0;
-    }
+@media (max-width: 575.98px) {
+    .sgpp-main { padding: 16px; }
+    .sgpp-form-wrap { align-items: flex-start; padding: 32px 0 24px; }
+    .sgpp-input, .sgpp-otp input { font-size: 16px; } /* evita zoom no iOS */
+    .sgpp-rules { grid-template-columns: 1fr; }
+    .sgpp-otp { gap: 6px; }
 }
 
 /* ============================================================

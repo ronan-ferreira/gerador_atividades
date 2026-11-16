@@ -78,14 +78,18 @@ def _executar_migracoes_iniciais():
             CREATE TABLE IF NOT EXISTS codigos_recuperacao (
                 id SERIAL PRIMARY KEY,
                 usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                codigo VARCHAR(10) NOT NULL,
+                codigo VARCHAR(255) NOT NULL,
                 tentativas INTEGER NOT NULL DEFAULT 0,
                 usado BOOLEAN NOT NULL DEFAULT FALSE,
                 criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 expira_em TIMESTAMP NOT NULL
             );
 
+            ALTER TABLE codigos_recuperacao ALTER COLUMN codigo TYPE VARCHAR(255);
+
             CREATE INDEX IF NOT EXISTS idx_codigos_recuperacao_user ON codigos_recuperacao(usuario_id, usado, expira_em);
+
+            UPDATE usuarios SET perfil = 'professor' WHERE perfil != 'professor';
         """)
         cur.close()
         conexao_pool.putconn(conn)
