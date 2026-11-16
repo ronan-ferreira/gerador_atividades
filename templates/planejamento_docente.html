@@ -70,9 +70,9 @@
                             </select>
                             <div class="mt-2" id="dica_modelo">
                                 <span class="badge badge-subtle-primary me-1" id="badge_modelo">
-                                    <i class="bi bi-mortarboard-fill me-1"></i> Modelo Técnico
+                                    <i class="bi bi-mortarboard-fill me-1"></i> Modelo Técnico (Padrão)
                                 </span>
-                                <span class="text-muted small" id="label_modelo" style="font-size: 0.78rem;">modelo tecnico.xlsx (oficial com Matriz SAEP)</span>
+                                <span class="text-muted small" id="label_modelo" style="font-size: 0.78rem;">modelo tecnico.xlsx (padrão caso não envie modelo próprio)</span>
                             </div>
                         </div>
                     </div>
@@ -330,11 +330,47 @@
                         </div>
                     </div>
 
-                    <!-- Seção 3: Upload dos Arquivos -->
+                    <!-- Seção 3: Modelo do Planejamento Docente (Word ou Excel - Opcional) -->
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
                         <span class="badge bg-primary rounded-pill px-2 py-1 small">3</span>
                         <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-cloud-arrow-up text-primary"></i> Arquivos Pedagógicos de Referência
+                            <i class="bi bi-file-earmark-ruled text-primary"></i> Modelo do Planejamento Docente (Word ou Excel &mdash; Opcional)
+                        </h5>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1 text-dark">
+                                            <i class="bi bi-file-earmark-word-fill text-primary me-1"></i><i class="bi bi-file-earmark-excel-fill text-success me-1"></i> Subir Modelo Próprio da sua Instituição (Word ou Excel)
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Se a sua escola, faculdade ou instituição de ensino possui um modelo específico de planejamento em <strong>Word (.docx)</strong> ou <strong>Excel (.xlsx / .xls)</strong>, envie-o aqui.<br>
+                                            <strong>O sistema lerá e preencherá diretamente o seu arquivo!</strong> Caso não envie nenhum modelo, o sistema preencherá automaticamente o modelo padrão do sistema em Excel (Técnico ou Qualificação/Aperfeiçoamento).
+                                        </p>
+                                    </div>
+                                    <div id="badgeStatusModelo" class="text-md-end flex-shrink-0">
+                                        <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 small">
+                                            <i class="bi bi-gear me-1"></i> Usará modelo padrão do sistema
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <input type="file" name="arquivo_modelo" id="arquivo_modelo" class="form-control form-control-lg"
+                                           accept=".xlsx,.xls,.docx" onchange="verificarUploadModelo(this)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 4: Upload dos Arquivos Pedagógicos de Referência -->
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <span class="badge bg-primary rounded-pill px-2 py-1 small">4</span>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-cloud-arrow-up text-primary"></i> Arquivos Pedagógicos de Referência (Plano de Curso &amp; Matriz)
                         </h5>
                     </div>
 
@@ -347,7 +383,7 @@
                                     </div>
                                     <h6 class="fw-bold mb-1">Plano de Curso (PDF) <span class="text-danger">*</span></h6>
                                     <p class="text-muted small mb-3">
-                                        Envie o PDF do Plano de Curso. O sistema identificará automaticamente a UC informada.
+                                        Envie o PDF do Plano de Curso. O sistema identificará automaticamente os conteúdos e competências da UC informada.
                                     </p>
                                 </div>
                                 <div>
@@ -363,9 +399,9 @@
                                     <div class="upload-icon-badge">
                                         <i class="bi bi-file-earmark-excel"></i>
                                     </div>
-                                    <h6 class="fw-bold mb-1">Matriz de Referência SAEP (Opcional)</h6>
+                                    <h6 class="fw-bold mb-1">Matriz de Referência / SAEP (Opcional)</h6>
                                     <p class="text-muted small mb-3">
-                                        Planilha Excel (.xls/.xlsx) com o detalhamento das capacidades e níveis cognitivos de Bloom.
+                                        Planilha Excel (.xls/.xlsx) ou PDF com detalhamento de capacidades, competências ou níveis de Bloom.
                                     </p>
                                 </div>
                                 <div>
@@ -376,16 +412,16 @@
                         </div>
                     </div>
 
-                    <!-- Seção 4: Configuração Opcional -->
+                    <!-- Seção 5: Configuração Opcional -->
                     <div class="mb-4">
                         <a class="text-decoration-none fw-semibold small text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="collapse" href="#opcoesAvancadas" role="button">
-                            <i class="bi bi-gear-fill"></i> Opções Adicionais (Unidade Escolar, etc.)
+                            <i class="bi bi-gear-fill"></i> Opções Adicionais (Unidade Escolar / Instituição de Ensino, etc.)
                         </a>
                         <div class="collapse mt-3" id="opcoesAvancadas">
                             <div class="card card-body bg-light border-0 rounded-3">
-                                <label class="form-label">Unidade Escolar / Centro de Formação</label>
+                                <label class="form-label">Unidade Escolar / Instituição de Ensino</label>
                                 <input type="text" name="unidade_escolar" class="form-control form-control-lg"
-                                       value="Taquaralto - Centro de Formação Profissional">
+                                       placeholder="Ex: Escola Técnica, Faculdade, Centro de Formação Profissional...">
                             </div>
                         </div>
                     </div>
@@ -393,10 +429,10 @@
                     <!-- Botão de Submissão -->
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow-sm" id="btnGerar">
-                            <i class="bi bi-download fs-5"></i> Gerar e Baixar Planejamento Docente (Excel)
+                            <i class="bi bi-download fs-5"></i> Gerar e Baixar Planejamento Docente
                         </button>
                         <p class="text-center text-muted small mt-2 mb-0">
-                            Ao clicar, o sistema processa a distribuição e o download do arquivo Excel (.xlsx) inicia automaticamente.<br>
+                            Ao clicar, o sistema processa a distribuição pedagógica e o download do arquivo preenchido (.xlsx ou .docx) inicia automaticamente.<br>
                             Você poderá gerar os <strong>Planos de Aula</strong> e <strong>Atividades</strong> a partir deste planejamento.
                         </p>
                     </div>
@@ -410,6 +446,29 @@
 </div>
 
 <script>
+function verificarUploadModelo(input) {
+    const badge = document.getElementById('badgeStatusModelo');
+    if (!badge) return;
+    if (input && input.files && input.files.length > 0) {
+        const nome = input.files[0].name;
+        const ehWord = nome.toLowerCase().endsWith('.docx') || nome.toLowerCase().endsWith('.doc');
+        const tipoIcone = ehWord ? 'bi-file-earmark-word-fill text-white' : 'bi-file-earmark-excel-fill text-white';
+        const corBadge = ehWord ? 'bg-primary' : 'bg-success';
+        const formatoStr = ehWord ? 'Word (.docx)' : 'Excel (.xlsx)';
+        badge.innerHTML = `
+            <span class="badge ${corBadge} border px-3 py-2 small animate__animated animate__fadeIn">
+                <i class="bi ${tipoIcone} me-1"></i> Modelo ${formatoStr}: <strong>${nome}</strong>
+            </span>
+        `;
+    } else {
+        badge.innerHTML = `
+            <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 small">
+                <i class="bi bi-gear me-1"></i> Usará modelo padrão do sistema
+            </span>
+        `;
+    }
+}
+
 function atualizarTipoCurso() {
     const sel = document.getElementById('modalidade');
     const label = document.getElementById('label_modelo');
@@ -419,21 +478,21 @@ function atualizarTipoCurso() {
     if (val.includes('TÉCNICO') || val.includes('TECNICO') || val.includes('HABILITA')) {
         if (badge) {
             badge.className = 'badge badge-subtle-primary me-1';
-            badge.innerHTML = '<i class="bi bi-mortarboard-fill me-1"></i> Modelo Técnico';
+            badge.innerHTML = '<i class="bi bi-mortarboard-fill me-1"></i> Modelo Técnico (Padrão)';
         }
-        label.innerText = 'modelo tecnico.xlsx (oficial com Matriz SAEP)';
+        label.innerText = 'modelo tecnico.xlsx (padrão caso não envie modelo próprio)';
     } else if (val.includes('APERFEIÇ') || val.includes('APERFEIC')) {
         if (badge) {
             badge.className = 'badge badge-subtle-success me-1';
-            badge.innerHTML = '<i class="bi bi-award-fill me-1"></i> Aperfeiçoamento';
+            badge.innerHTML = '<i class="bi bi-award-fill me-1"></i> Aperfeiçoamento (Padrão)';
         }
-        label.innerText = 'modelo qualificacao.xlsx (layout Aperfeiçoamento)';
+        label.innerText = 'modelo qualificacao.xlsx (padrão caso não envie modelo próprio)';
     } else {
         if (badge) {
             badge.className = 'badge badge-subtle-success me-1';
-            badge.innerHTML = '<i class="bi bi-award-fill me-1"></i> Qualificação';
+            badge.innerHTML = '<i class="bi bi-award-fill me-1"></i> Qualificação (Padrão)';
         }
-        label.innerText = 'modelo qualificacao.xlsx (layout Qualificação)';
+        label.innerText = 'modelo qualificacao.xlsx (padrão caso não envie modelo próprio)';
     }
 }
 

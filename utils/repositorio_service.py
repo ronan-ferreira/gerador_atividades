@@ -52,7 +52,12 @@ def parsear_texto_em_questoes(texto):
         # Limpa pontuação e quebras redundantes
         enunciado = re.sub(r'^\s*[:\-\.]\s*', '', enunciado).strip()
 
-        tipo = 'objetiva' if alternativas else 'discursiva'
+        if re.search(r'(?i)\b(?:pr[aá]tic[ao]|estudo de caso|desafio pr[aá]tico|laborat[oó]rio|oficina|roteiro de execu[cç][aã]o)\b', corpo):
+            tipo = 'pratica'
+        elif alternativas:
+            tipo = 'objetiva'
+        else:
+            tipo = 'discursiva'
 
         questoes.append({
             'enunciado': enunciado,
@@ -98,6 +103,14 @@ def adicionar_ao_repositorio(curso, disciplina, conteudo, dificuldade, tipo,
     """
     conn, cursor = get_cursor()
     try:
+        # Verifica duplicidade
+        cursor.execute(
+            "SELECT id FROM repositorio_atividades WHERE LOWER(TRIM(enunciado)) = LOWER(TRIM(%s)) LIMIT 1",
+            (enunciado.strip(),)
+        )
+        existente = cursor.fetchone()
+        if existente:
+            return existente[0]
         cursor.execute(
             """
             INSERT INTO repositorio_atividades (
@@ -233,9 +246,21 @@ def salvar_questoes_ia_no_repositorio(texto_atividade, curso, disciplina, conteu
         return 0
 
     inseridas = 0
+    duplicadas = 0
     conn, cursor = get_cursor()
     try:
         for q in questoes:
+            enunciado_q = (q["enunciado"] or "").strip()
+            if not enunciado_q:
+                continue
+            # Verifica duplicidade pelo enunciado (case-insensitive)
+            cursor.execute(
+                "SELECT id FROM repositorio_atividades WHERE LOWER(TRIM(enunciado)) = LOWER(TRIM(%s)) LIMIT 1",
+                (enunciado_q,)
+            )
+            if cursor.fetchone():
+                duplicadas += 1
+                continue
             cursor.execute(
                 """
                 INSERT INTO repositorio_atividades (
@@ -250,7 +275,7 @@ def salvar_questoes_ia_no_repositorio(texto_atividade, curso, disciplina, conteu
                     conteudo.strip(),
                     dificuldade.strip().lower(),
                     q["tipo"],
-                    q["enunciado"],
+                    enunciado_q,
                     q["alternativas"],
                     q["resposta_correta"],
                     usuario_id
@@ -258,6 +283,8 @@ def salvar_questoes_ia_no_repositorio(texto_atividade, curso, disciplina, conteu
             )
             inseridas += 1
         conn.commit()
+        if duplicadas > 0:
+            print(f"[REPOSITORIO] {duplicadas} questão(ões) duplicada(s) ignorada(s).")
     except Exception as e:
         print(f"[REPOSITORIO] Erro ao salvar questões da IA no repositório: {e}")
     finally:
@@ -268,21 +295,34 @@ def salvar_questoes_ia_no_repositorio(texto_atividade, curso, disciplina, conteu
 
 def buscar_questoes_repositorio(curso=None, disciplina=None, conteudo=None,
                                 dificuldade=None, tipo=None, usuario_id=None,
-                                limite=20, apenas_professor=False):
+                                limite=20, apenas_professor=False, autoria=None):
     """
     Busca questões no repositório usando critérios contextuais.
     Prioriza questões do próprio professor, seguidas de questões do repositório em geral.
+    Suporta filtros por formato (objetiva, discursiva, prática, mista) e autoria (professor, ia, mista).
     """
     condicoes = []
     params = []
 
-    if apenas_professor:
+    # Filtro de autoria / origem
+    if autoria:
+        autoria_limpa = autoria.strip().lower()
+        if autoria_limpa == "professor":
+            condicoes.append("origem = 'professor'")
+        elif autoria_limpa == "ia":
+            condicoes.append("origem = 'ia'")
+        # se 'mista' ou 'todos', aceita professor e ia
+    elif apenas_professor:
         condicoes.append("origem = 'professor'")
 
     # Filtro de tipo: se for mista, aceita qualquer; se especificado, filtra
     if tipo and tipo != "mista":
-        condicoes.append("tipo = %s")
-        params.append(tipo.strip().lower())
+        tipo_limpo = tipo.strip().lower()
+        if tipo_limpo in ("pratica", "prática"):
+            condicoes.append("(tipo = 'pratica' OR tipo = 'prática')")
+        else:
+            condicoes.append("tipo = %s")
+            params.append(tipo_limpo)
 
     # Monta cláusula de busca textual inteligente
     text_clauses = []
@@ -342,11 +382,23 @@ def buscar_questoes_repositorio(curso=None, disciplina=None, conteudo=None,
             fallback_conds = []
             if ids_existentes:
                 fallback_conds.append(f"id NOT IN ({','.join(str(i) for i in ids_existentes)})")
-            if apenas_professor:
+
+            if autoria:
+                autoria_limpa = autoria.strip().lower()
+                if autoria_limpa == "professor":
+                    fallback_conds.append("origem = 'professor'")
+                elif autoria_limpa == "ia":
+                    fallback_conds.append("origem = 'ia'")
+            elif apenas_professor:
                 fallback_conds.append("origem = 'professor'")
+
             if tipo and tipo != "mista":
-                fallback_conds.append("tipo = %s")
-                fallback_params.append(tipo.strip().lower())
+                tipo_limpo = tipo.strip().lower()
+                if tipo_limpo in ("pratica", "prática"):
+                    fallback_conds.append("(tipo = 'pratica' OR tipo = 'prática')")
+                else:
+                    fallback_conds.append("tipo = %s")
+                    fallback_params.append(tipo_limpo)
 
             fallback_or = []
             if disciplina and disciplina.strip():
@@ -394,7 +446,7 @@ def buscar_questoes_repositorio(curso=None, disciplina=None, conteudo=None,
 
 def contar_questoes_repositorio(curso=None, disciplina=None, conteudo=None,
                                 dificuldade=None, tipo=None, usuario_id=None,
-                                apenas_professor=False):
+                                apenas_professor=False, autoria=None):
     """
     Retorna a quantidade exata de questões disponíveis no repositório para os critérios dados.
     """
@@ -406,7 +458,8 @@ def contar_questoes_repositorio(curso=None, disciplina=None, conteudo=None,
         tipo=tipo,
         usuario_id=usuario_id,
         limite=100,
-        apenas_professor=apenas_professor
+        apenas_professor=apenas_professor,
+        autoria=autoria
     )
     return len(itens)
 

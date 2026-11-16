@@ -450,7 +450,7 @@ def gerar_planejamento_ia(dados_plano, dados_matriz, total_aulas, horas_por_dia,
     matriz_str = "\n".join(matriz_resumo) if matriz_resumo else "Conforme Matriz de Referência"
 
     prompt = f"""
-Voce e um especialista em Planejamento Docente do SENAI com foco na Taxonomia de Bloom.
+Voce e um especialista em Planejamento Docente e Metodologia Pedagogica com foco na Taxonomia de Bloom.
 Elabore o planejamento de EXATAMENTE {total_aulas} aulas para a Unidade Curricular: "{uc}".
 Carga horaria por aula: {horas_por_dia} horas.
 
@@ -505,7 +505,7 @@ Responda ESTRITAMENTE em formato JSON valido, sem nenhum texto antes ou depois:
         print(f"[IA] Solicitando planejamento docente com Taxonomia de Bloom ({total_aulas} aulas)...")
         texto_resp = chamar_ia(
             prompt=prompt,
-            system_prompt="Você é um especialista em planejamento pedagógico do SENAI e responde exclusivamente em JSON válido.",
+            system_prompt="Você é um especialista em planejamento pedagógico docente e responde exclusivamente em JSON válido.",
             max_tokens=4096,
             temperature=0.2
         )

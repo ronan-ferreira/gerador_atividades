@@ -37,6 +37,7 @@ from utils.docx_atividade_generator import gerar_docx_atividade
 from utils.pdf_atividade_generator import gerar_pdf_atividade
 
 from utils.excel_planejamento_generator import gerar_excel_planejamento
+from utils.docx_planejamento_generator import gerar_docx_planejamento
 from utils.pdf_plano_reader import estruturar_dados_plano_pdf
 from utils.matriz_saep_reader import ler_matriz_saep
 from utils.planejamento_docente_reader import ler_excel_planejamento_docente
@@ -49,6 +50,8 @@ from utils.security import (
     atualizar_senha_para_hash_se_necessario,
     redefinir_senha_usuario,
     redefinir_senha_por_email,
+    solicitar_codigo_otp,
+    redefinir_senha_com_otp,
 )
 import os
 import re
@@ -192,73 +195,60 @@ def logout():
 
 
 # ============================================================
-# REDEFINIÇÃO DE SENHA (PÚBLICA / ESQUECI MINHA SENHA)
+# REDEFINIÇÃO DE SENHA COM OTP — ETAPA 1: solicitar código
 # ============================================================
 @app.route("/redefinir_senha", methods=["GET", "POST"])
 @app.route("/esqueci_senha", methods=["GET", "POST"])
 def redefinir_senha():
-    # Se já logado, redireciona para a página interna de alteração
+    """Etapa 1: o usuário informa apenas o e-mail e recebe o código OTP."""
     if "usuario_id" in session:
         return redirect("/alterar_senha")
 
-    chave_recuperacao_configurada = os.environ.get("CHAVE_RECUPERACAO_SENHA", "").strip()
-
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-        nova_senha = request.form.get("nova_senha", "")
-        confirmar_senha = request.form.get("confirmar_senha", "")
-        codigo = request.form.get("codigo_recuperacao", "").strip()
+        sucesso, mensagem, info = solicitar_codigo_otp(email)
 
-        if not email or not nova_senha or not confirmar_senha:
-            return render_template(
-                "redefinir_senha.html",
-                erro="Preencha todos os campos obrigatórios.",
-                exige_codigo=bool(chave_recuperacao_configurada),
-                email=email,
-            )
-
-        if len(nova_senha) < 3:
-            return render_template(
-                "redefinir_senha.html",
-                erro="A nova senha deve ter no mínimo 3 caracteres.",
-                exige_codigo=bool(chave_recuperacao_configurada),
-                email=email,
-            )
-
-        if nova_senha != confirmar_senha:
-            return render_template(
-                "redefinir_senha.html",
-                erro="A confirmação de senha não confere com a nova senha.",
-                exige_codigo=bool(chave_recuperacao_configurada),
-                email=email,
-            )
-
-        # Se houver chave institucional configurada no .env, valida
-        if chave_recuperacao_configurada and codigo != chave_recuperacao_configurada:
-            return render_template(
-                "redefinir_senha.html",
-                erro="Chave de segurança institucional incorreta. Solicite ao administrador da rede.",
-                exige_codigo=True,
-                email=email,
-            )
-
-        # Atualiza a senha no banco
-        sucesso = redefinir_senha_por_email(email, nova_senha)
         if not sucesso:
-            return render_template(
-                "redefinir_senha.html",
-                erro="E-mail não encontrado no sistema. Verifique o endereço informado.",
-                exige_codigo=bool(chave_recuperacao_configurada),
-                email=email,
-            )
+            return render_template("redefinir_senha.html", erro=mensagem, email=email)
 
-        return redirect("/login?sucesso=senha_redefinida")
+        # Código enviado (ou simulado em dev): avança para etapa 2
+        return render_template(
+            "redefinir_senha.html",
+            codigo_enviado=True,
+            info_msg=mensagem,
+            email=info.get("email", email),
+            dev_mode=info.get("dev_mode", False),
+            codigo_dev=info.get("codigo_dev"),
+        )
 
-    return render_template(
-        "redefinir_senha.html",
-        exige_codigo=bool(chave_recuperacao_configurada),
-        email=request.args.get("email", ""),
-    )
+    return render_template("redefinir_senha.html", email=request.args.get("email", ""))
+
+
+# ============================================================
+# REDEFINIÇÃO DE SENHA COM OTP — ETAPA 2: validar e redefinir
+# ============================================================
+@app.route("/redefinir_senha/verificar", methods=["POST"])
+def redefinir_senha_verificar():
+    """Etapa 2: valida o código OTP e define a nova senha."""
+    if "usuario_id" in session:
+        return redirect("/alterar_senha")
+
+    email = request.form.get("email", "").strip().lower()
+    codigo = request.form.get("codigo_otp", "").strip()
+    nova_senha = request.form.get("nova_senha", "")
+    confirmar_senha = request.form.get("confirmar_senha", "")
+
+    sucesso, mensagem = redefinir_senha_com_otp(email, codigo, nova_senha, confirmar_senha)
+
+    if not sucesso:
+        return render_template(
+            "redefinir_senha.html",
+            codigo_enviado=True,
+            erro=mensagem,
+            email=email,
+        )
+
+    return redirect("/login?sucesso=senha_redefinida")
 
 
 # ============================================================
@@ -391,6 +381,14 @@ def admin_deletar_usuario(id):
 def landing():
     # Sempre exibe a Landing Page ao abrir o site (mesmo logado, com botão 'Ir para o Painel')
     return render_template("landing.html")
+
+
+# =========================
+# PÁGINA DE PLANOS E PREÇOS
+# =========================
+@app.route("/precos", methods=["GET"])
+def precos():
+    return render_template("precos.html")
 
 
 # =========================
@@ -791,6 +789,138 @@ def repositorio_deletar(id):
     )
 
     return redirect("/repositorio")
+
+
+@app.route("/repositorio/visualizar/<int:id>")
+def repositorio_visualizar(id):
+    if "usuario_id" not in session:
+        return redirect("/login")
+
+    item = obter_item_repositorio(id)
+    if not item:
+        return redirect("/repositorio")
+
+    return render_template("visualizar_atividade_repositorio.html", item=item)
+
+
+@app.route("/repositorio/pdf/<int:id>")
+def repositorio_pdf(id):
+    if "usuario_id" not in session:
+        return redirect("/login")
+
+    item = obter_item_repositorio(id)
+    if not item:
+        return redirect("/repositorio")
+
+    dados_cab = {
+        "curso": item.get("curso") or "—",
+        "unidade_curricular": item.get("disciplina") or "—",
+        "aula_encontro": "____________________________",
+        "nivel_bloom": (item.get("dificuldade") or "Médio").capitalize()
+    }
+
+    enunciado = (item.get("enunciado") or "").strip()
+    alternativas = (item.get("alternativas") or "").strip()
+    resposta = (item.get("resposta_correta") or "").strip()
+
+    conteudo_formatado = f"Questão 1: {enunciado}"
+    if alternativas:
+        conteudo_formatado += f"\n\n{alternativas}"
+    if resposta:
+        if not resposta.lower().startswith("resposta"):
+            conteudo_formatado += f"\n\nResposta correta: {resposta}"
+        else:
+            conteudo_formatado += f"\n\n{resposta}"
+
+    os.makedirs("outputs", exist_ok=True)
+    arquivo_docx = f"outputs/repositorio_{id}.docx"
+    arquivo_pdf = f"outputs/repositorio_{id}.pdf"
+
+    gerar_docx_atividade(
+        titulo="ATIVIDADE",
+        subtitulo=dados_cab["curso"],
+        conteudo=conteudo_formatado,
+        caminho_saida=arquivo_docx,
+        dados_cabecalho=dados_cab
+    )
+
+    resultado = gerar_pdf_atividade(
+        arquivo_docx=arquivo_docx,
+        arquivo_pdf=arquivo_pdf,
+        titulo="ATIVIDADE",
+        subtitulo=dados_cab["curso"],
+        dados_cabecalho=dados_cab,
+        conteudo=conteudo_formatado
+    )
+
+    if not resultado or not os.path.exists(arquivo_pdf):
+        from utils.pdf_atividade_generator import gerar_pdf_atividade_reportlab
+        gerar_pdf_atividade_reportlab(
+            arquivo_pdf=arquivo_pdf,
+            titulo="ATIVIDADE",
+            subtitulo=dados_cab["curso"],
+            dados_cabecalho=dados_cab,
+            conteudo=conteudo_formatado,
+            arquivo_docx=arquivo_docx
+        )
+
+    if os.path.exists(arquivo_pdf):
+        return send_file(
+            arquivo_pdf,
+            as_attachment=True,
+            download_name=f"atividade_repositorio_{id}.pdf",
+            mimetype="application/pdf"
+        )
+
+    return "Erro ao gerar arquivo PDF da atividade do repositório.", 500
+
+
+@app.route("/repositorio/word/<int:id>")
+def repositorio_word(id):
+    if "usuario_id" not in session:
+        return redirect("/login")
+
+    item = obter_item_repositorio(id)
+    if not item:
+        return redirect("/repositorio")
+
+    dados_cab = {
+        "curso": item.get("curso") or "—",
+        "unidade_curricular": item.get("disciplina") or "—",
+        "aula_encontro": "____________________________",
+        "nivel_bloom": (item.get("dificuldade") or "Médio").capitalize()
+    }
+
+    enunciado = (item.get("enunciado") or "").strip()
+    alternativas = (item.get("alternativas") or "").strip()
+    resposta = (item.get("resposta_correta") or "").strip()
+
+    conteudo_formatado = f"Questão 1: {enunciado}"
+    if alternativas:
+        conteudo_formatado += f"\n\n{alternativas}"
+    if resposta:
+        if not resposta.lower().startswith("resposta"):
+            conteudo_formatado += f"\n\nResposta correta: {resposta}"
+        else:
+            conteudo_formatado += f"\n\n{resposta}"
+
+    os.makedirs("outputs", exist_ok=True)
+    arquivo_docx = f"outputs/repositorio_{id}.docx"
+
+    gerar_docx_atividade(
+        titulo="ATIVIDADE",
+        subtitulo=dados_cab["curso"],
+        conteudo=conteudo_formatado,
+        caminho_saida=arquivo_docx,
+        dados_cabecalho=dados_cab
+    )
+
+    return send_file(
+        arquivo_docx,
+        as_attachment=True,
+        download_name=f"atividade_repositorio_{id}.docx",
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
 
 
 # =========================
@@ -1889,15 +2019,17 @@ def curso_word(curso_id):
 # =========================
 # GERAR ATIVIDADE DO PLANO
 # =========================
-@app.route("/gerar_atividade_plano/<int:id>", methods=["GET"])
+@app.route("/gerar_atividade_plano/<int:id>", methods=["GET", "POST"])
 def gerar_atividade_plano(id):
 
     if "usuario_id" not in session:
         return redirect("/login")
 
-    tipo = request.args.get("tipo", "objetiva")
-    quantidade_str = request.args.get("quantidade", "5")
-    dificuldade = request.args.get("dificuldade", "mÃ©dio")
+    tipo = request.values.get("tipo", "mista").strip().lower()
+    fonte = request.values.get("fonte", "mista").strip().lower()
+    autoria = request.values.get("autoria", "mista").strip().lower()
+    dificuldade = request.values.get("dificuldade", "médio").strip().lower()
+    quantidade_str = request.values.get("quantidade", "5").strip()
 
     # Validar quantidade
     try:
@@ -1928,7 +2060,7 @@ def gerar_atividade_plano(id):
         release_cursor(conn, cursor)
 
     if not plano:
-        return "Plano nÃ£o encontrado"
+        return "Plano não encontrado", 404
 
     conteudo = plano[4]
     curso_id = plano[1]
@@ -1951,65 +2083,154 @@ def gerar_atividade_plano(id):
     finally:
         release_cursor(conn, cursor)
 
-    if curso:
-        nome_curso = curso[0]
+    nome_curso = curso[0] if curso else "Curso Técnico"
+
+    # Extrai metadados estruturados para o cabeçalho e busca contextual
+    curso_ident = nome_curso
+    uc_ident = "Plano de Aula"
+    aula_ident = f"Dia {plano[2]}"
+    bloom_ident = dificuldade.capitalize()
+
+    m_c = re.search(r"Curso:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
+    if m_c:
+        curso_ident = m_c.group(1).strip()
+    elif "—" in nome_curso:
+        curso_ident = nome_curso.split("—")[0].strip()
+
+    m_uc = re.search(r"Unidade Curricular:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
+    if m_uc:
+        uc_ident = m_uc.group(1).strip()
+    elif "—" in nome_curso:
+        uc_ident = nome_curso.split("—")[1].strip()
+
+    m_a = re.search(r"Aula\s*/\s*Encontro:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
+    if m_a:
+        aula_ident = m_a.group(1).strip()
+
+    m_b = re.search(r"N[ií]vel Cognitivo(?:\s*\(Taxonomia de Bloom\))?:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
+    if m_b:
+        bloom_ident = m_b.group(1).strip()
+
+    print(f"🤖 Gerando atividade a partir do Plano #{id}")
+    print(f"   Curso: {curso_ident} | UC: {uc_ident} | Formato: {tipo} | Fonte: {fonte} | Autoria: {autoria} | Dificuldade: {dificuldade} | Qtd: {quantidade}")
+
+    # ========================================================
+    # RESOLUÇÃO DAS QUESTÕES DE ACORDO COM FONTE E AUTORIA
+    # ========================================================
+    atividade = ""
+    origem_salva = "ia"
+
+    if fonte == "repositorio":
+        # Busca no Repositório Interno com o filtro de autoria selecionado
+        questoes_disp = buscar_questoes_repositorio(
+            curso=curso_ident,
+            disciplina=uc_ident,
+            conteudo=conteudo,
+            dificuldade=dificuldade,
+            tipo=tipo,
+            usuario_id=session["usuario_id"],
+            limite=quantidade,
+            autoria=autoria
+        )
+        qtd_encontrada = len(questoes_disp)
+        if qtd_encontrada >= quantidade:
+            atividade = formatar_questoes_para_atividade(questoes_disp[:quantidade])
+            origem_salva = "repositorio"
+        else:
+            # Completa as faltantes via IA
+            faltantes = quantidade - qtd_encontrada
+            texto_ia = gerar_atividade(conteudo, dificuldade, tipo, faltantes)
+            salvar_questoes_ia_no_repositorio(
+                texto_atividade=texto_ia,
+                curso=curso_ident,
+                disciplina=uc_ident,
+                conteudo=conteudo,
+                dificuldade=dificuldade,
+                tipo=tipo,
+                usuario_id=session["usuario_id"]
+            )
+            atividade = compor_atividade_hibrida(questoes_disp, texto_ia, quantidade)
+            origem_salva = "misto" if qtd_encontrada > 0 else "ia"
+
+    elif fonte == "externo":
+        # Geração externa via IA
+        atividade = gerar_atividade(conteudo, dificuldade, tipo, quantidade)
+        salvar_questoes_ia_no_repositorio(
+            texto_atividade=atividade,
+            curso=curso_ident,
+            disciplina=uc_ident,
+            conteudo=conteudo,
+            dificuldade=dificuldade,
+            tipo=tipo,
+            usuario_id=session["usuario_id"]
+        )
+        origem_salva = "ia"
+
     else:
-        nome_curso = "Curso nÃ£o encontrado"
+        # Fonte Mista (Repositório + Externo/IA)
+        qtd_repo_alvo = max(1, quantidade // 2)
+        questoes_disp = buscar_questoes_repositorio(
+            curso=curso_ident,
+            disciplina=uc_ident,
+            conteudo=conteudo,
+            dificuldade=dificuldade,
+            tipo=tipo,
+            usuario_id=session["usuario_id"],
+            limite=qtd_repo_alvo,
+            autoria=autoria
+        )
+        qtd_repo = len(questoes_disp)
+        qtd_ia_necessaria = quantidade - qtd_repo
+        texto_ia = ""
+        if qtd_ia_necessaria > 0:
+            texto_ia = gerar_atividade(conteudo, dificuldade, tipo, qtd_ia_necessaria)
+            salvar_questoes_ia_no_repositorio(
+                texto_atividade=texto_ia,
+                curso=curso_ident,
+                disciplina=uc_ident,
+                conteudo=conteudo,
+                dificuldade=dificuldade,
+                tipo=tipo,
+                usuario_id=session["usuario_id"]
+            )
+        atividade = compor_atividade_hibrida(questoes_disp, texto_ia, quantidade)
+        origem_salva = "misto"
 
-    # =========================
-    # GERAR ATIVIDADE COM IA
-    # =========================
-    print(f"ðŸ¤– Gerando atividade a partir do Plano #{id}")
-    print(f"   Curso: {nome_curso} | Tipo: {tipo} | Dificuldade: {dificuldade} | Qtd: {quantidade}")
+    # Monta rótulos claros para o cabeçalho oficial
+    fonte_label = {
+        "repositorio": "Repositório Interno",
+        "externo": "Externo (Geração sob Demanda)",
+        "mista": "Mista (Repositório + Externo)"
+    }.get(fonte, fonte.capitalize())
 
-    atividade = gerar_atividade(
-        conteudo,
-        dificuldade,
-        tipo,
-        quantidade
+    autoria_label = {
+        "professor": "Professor (Docente)",
+        "ia": "Inteligência Artificial (IA)",
+        "mista": "Mista (Professor + IA)"
+    }.get(autoria, autoria.capitalize())
+
+    formato_label = {
+        "objetiva": "Objetiva (Múltipla Escolha)",
+        "discursiva": "Discursiva (Dissertativa)",
+        "pratica": "Prática (Laboratório / Oficina / Desafio)",
+        "mista": "Mista (Teórica + Prática)"
+    }.get(tipo, tipo.capitalize())
+
+    cabecalho_ident = (
+        f"- Curso: {curso_ident}\n"
+        f"- Unidade Curricular: {uc_ident}\n"
+        f"- Aula / Encontro: {aula_ident}\n"
+        f"- Formato: {formato_label}\n"
+        f"- Fonte das Questões: {fonte_label}\n"
+        f"- Autoria das Questões: {autoria_label}\n"
+        f"- Nível Cognitivo (Taxonomia de Bloom): {bloom_ident}"
     )
-
-    print(f"âœ… Atividade gerada com sucesso ({len(atividade)} caracteres)")
-    print("=" * 60)
 
     # =========================
     # SALVAR NO BANCO
     # =========================
     conn, cursor = get_cursor()
     try:
-        # Extrai metadados estruturados para o cabeçalho da atividade
-        curso_ident = nome_curso
-        uc_ident = "Plano de Aula"
-        aula_ident = f"Dia {plano[2]}"
-        bloom_ident = dificuldade.capitalize()
-
-        m_c = re.search(r"Curso:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
-        if m_c:
-            curso_ident = m_c.group(1).strip()
-        elif "—" in nome_curso:
-            curso_ident = nome_curso.split("—")[0].strip()
-
-        m_uc = re.search(r"Unidade Curricular:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
-        if m_uc:
-            uc_ident = m_uc.group(1).strip()
-        elif "—" in nome_curso:
-            uc_ident = nome_curso.split("—")[1].strip()
-
-        m_a = re.search(r"Aula\s*/\s*Encontro:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
-        if m_a:
-            aula_ident = m_a.group(1).strip()
-
-        m_b = re.search(r"N[i\xed]vel Cognitivo(?:\s*\(Taxonomia de Bloom\))?:\s*([^\n\r]+)", conteudo, re.IGNORECASE)
-        if m_b:
-            bloom_ident = m_b.group(1).strip()
-
-        cabecalho_ident = (
-            f"- Curso: {curso_ident}\n"
-            f"- Unidade Curricular: {uc_ident}\n"
-            f"- Aula / Encontro: {aula_ident}\n"
-            f"- Nível Cognitivo (Taxonomia de Bloom): {bloom_ident}"
-        )
-
         cursor.execute(
             """
             INSERT INTO atividades (
@@ -2021,7 +2242,7 @@ def gerar_atividade_plano(id):
                 usuario_id,
                 origem
             )
-            VALUES (%s,%s,%s,%s,%s,%s,'ia')
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
             """,
             (
                 curso_ident,
@@ -2029,25 +2250,12 @@ def gerar_atividade_plano(id):
                 cabecalho_ident,
                 bloom_ident,
                 atividade,
-                session["usuario_id"]
+                session["usuario_id"],
+                origem_salva
             ),
         )
 
         conn.commit()
-
-        # Cataloga também no repositório de atividades
-        try:
-            salvar_questoes_ia_no_repositorio(
-                texto_atividade=atividade,
-                curso=curso_ident,
-                disciplina=uc_ident,
-                conteudo=cabecalho_ident,
-                dificuldade=bloom_ident,
-                tipo=tipo,
-                usuario_id=session["usuario_id"]
-            )
-        except Exception as e_repo:
-            print(f"[REPOSITORIO] Aviso ao catalogar atividade do plano: {e_repo}")
     finally:
         release_cursor(conn, cursor)
 
@@ -2174,6 +2382,26 @@ def planejamento_docente():
         os.makedirs(pasta_upload, exist_ok=True)
 
         # ----------------------------------------------------------
+        # 0. Modelo de Planejamento Personalizado (Word ou Excel) - Opcional
+        # ----------------------------------------------------------
+        arquivo_modelo = request.files.get("arquivo_modelo") or request.files.get("arquivo_modelo_excel")
+        caminho_modelo_custom = None
+        formato_modelo = "excel"
+        if arquivo_modelo and arquivo_modelo.filename:
+            nome_modelo = secure_filename(arquivo_modelo.filename)
+            ext_modelo = os.path.splitext(nome_modelo)[1].lower()
+            if ext_modelo in (".xlsx", ".xls"):
+                caminho_modelo_custom = os.path.join(pasta_upload, f"modelo_custom_{nome_modelo}")
+                arquivo_modelo.save(caminho_modelo_custom)
+                formato_modelo = "excel"
+                print(f"[INFO] Modelo de planejamento Excel enviado: {caminho_modelo_custom}")
+            elif ext_modelo in (".docx", ".doc"):
+                caminho_modelo_custom = os.path.join(pasta_upload, f"modelo_custom_{nome_modelo}")
+                arquivo_modelo.save(caminho_modelo_custom)
+                formato_modelo = "word"
+                print(f"[INFO] Modelo de planejamento Word (.docx) enviado: {caminho_modelo_custom}")
+
+        # ----------------------------------------------------------
         # 1. Lê o PDF do Plano de Curso
         # ----------------------------------------------------------
         arquivo_plano = request.files.get("arquivo_plano_pdf")
@@ -2278,9 +2506,14 @@ def planejamento_docente():
         }
 
         os.makedirs("outputs", exist_ok=True)
-        caminho_excel = gerar_excel_planejamento(dados_cabecalho, aulas)
-        nome_arquivo_excel = os.path.basename(caminho_excel)
-        print(f"[OK] Excel do Planejamento Docente gerado com sucesso: {caminho_excel}")
+        if formato_modelo == "word" and caminho_modelo_custom and caminho_modelo_custom.lower().endswith(".docx"):
+            caminho_gerado = gerar_docx_planejamento(dados_cabecalho, aulas, caminho_modelo=caminho_modelo_custom)
+            nome_arquivo_gerado = os.path.basename(caminho_gerado)
+            print(f"[OK] Planejamento Docente (Word) gerado com sucesso: {caminho_gerado}")
+        else:
+            caminho_gerado = gerar_excel_planejamento(dados_cabecalho, aulas, caminho_modelo=caminho_modelo_custom)
+            nome_arquivo_gerado = os.path.basename(caminho_gerado)
+            print(f"[OK] Planejamento Docente (Excel) gerado com sucesso: {caminho_gerado}")
 
         # ----------------------------------------------------------
         # 4. Salva o Planejamento Docente e gera automaticamente os Planos de Aula
@@ -2329,7 +2562,7 @@ def planejamento_docente():
                     data_inicio_str or None,
                     data_fim_str or None,
                     total_aulas,
-                    nome_arquivo_excel,
+                    nome_arquivo_gerado,
                     curso_id,
                     session["usuario_id"],
                     modalidade

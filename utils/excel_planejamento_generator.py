@@ -2,6 +2,7 @@ import os
 import re
 import math
 import zipfile
+import unicodedata
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
@@ -116,6 +117,67 @@ def detectar_tipo_curso(modalidade: str = "", nome_curso: str = "") -> str:
     return "qualificacao"
 
 
+def normalizar_texto_chave(txt):
+    """Remove acentos, pontuações e converte para minúsculo para buscas flexíveis."""
+    if not txt:
+        return ""
+    s = unicodedata.normalize("NFKD", str(txt)).encode("ASCII", "ignore").decode("utf-8")
+    return re.sub(r"[^a-zA-Z0-9\s]", " ", s).strip().lower()
+
+
+def obter_situacao_aprendizagem_padrao(aula, dados_cabecalho):
+    """
+    Retorna a situação de aprendizagem contextualizada. Se for instituição SENAI,
+    mantém o link oficial; para qualquer outra instituição, usa texto pedagógico contextualizado.
+    """
+    sa = aula.get("situacao_aprendizagem")
+    if sa and str(sa).strip():
+        return str(sa).strip()
+    unidade = str(dados_cabecalho.get("unidade_escolar", "")).upper()
+    modalidade = str(dados_cabecalho.get("modalidade", "")).upper()
+    if "SENAI" in unidade or "SENAI" in modalidade:
+        return "https://recursosdidaticos.senai.br"
+    return "Situação de aprendizagem contextualizada com resolução de problemas práticos"
+
+
+def identificar_estrutura_modelo(caminho_modelo: str) -> tuple:
+    """
+    Inspeciona o arquivo de modelo Excel fornecido e determina se segue
+    o layout técnico oficial, o de qualificação ou se é um modelo personalizado.
+    Retorna (tipo_estrutura, eh_customizado).
+    """
+    if not caminho_modelo or not os.path.exists(caminho_modelo):
+        return ("qualificacao", False)
+
+    try:
+        wb = openpyxl.load_workbook(caminho_modelo, data_only=True)
+        ws = wb.active
+
+        # Inspeciona cabeçalhos para detectar modelo técnico padrão/oficial
+        val_d11 = normalizar_texto_chave(ws.cell(row=11, column=4).value or "")
+        val_d12 = normalizar_texto_chave(ws.cell(row=12, column=4).value or "")
+        val_e11 = normalizar_texto_chave(ws.cell(row=11, column=5).value or "")
+
+        if "saep" in val_d11 or "saep" in val_d12 or "matriz de referencia" in val_d11 or "matriz de referencia" in val_d12:
+            wb.close()
+            return ("tecnico", False)
+
+        # Inspeciona modelo de qualificação padrão/oficial
+        val_d11_q = normalizar_texto_chave(ws.cell(row=11, column=4).value or "")
+        val_e11_q = normalizar_texto_chave(ws.cell(row=11, column=5).value or "")
+
+        if ("como" in val_d11_q or "estrategia" in val_d11_q) and ("onde" in val_e11_q or "ambiente" in val_e11_q):
+            wb.close()
+            return ("qualificacao", False)
+
+        # Caso contrário, trata como modelo personalizado enviado pelo usuário
+        wb.close()
+        return ("customizado", True)
+    except Exception as e:
+        print(f"[AVISO] Erro ao identificar estrutura do modelo: {e}")
+        return ("customizado", True)
+
+
 def calcular_altura_linha(texto_o_que, texto_estrategia="", texto_recursos="", texto_criterios="", texto_instrumentos=""):
     """
     Calcula a altura ideal da linha do Excel baseando-se no número de linhas reais
@@ -162,36 +224,263 @@ def gerar_excel_planejamento(
     caminho_saida=None
 ):
     """
-    Gera o arquivo Excel do Planejamento Docente a partir do modelo correto.
-    Diferencia automaticamente o tipo de curso:
-      - Curso Técnico / Habilitação Técnica → usa modelo técnico (modelo tecnico.xlsx)
-      - Qualificação Profissional / Aperfeiçoamento → usa modelo qualificação (modelo qualificacao.xlsx)
-    Utiliza os modelos oficiais salvos internamente na pasta templates/ do sistema.
+    Gera o arquivo Excel do Planejamento Docente a partir do modelo selecionado:
+      - Se o usuário forneceu um modelo personalizado: inspeciona e preenche diretamente no modelo dele.
+      - Se o usuário NÃO forneceu modelo: seleciona automaticamente o modelo oficial do sistema
+        (Técnico ou Qualificação/Aperfeiçoamento) conforme a modalidade e preenche.
     """
     modalidade = dados_cabecalho.get("modalidade", "")
     nome_curso = dados_cabecalho.get("nome_curso", "")
 
-    # --- Seleciona o modelo automaticamente se não fornecido explicitamente ---
-    if caminho_modelo is None:
+    # 1. Caso o usuário NÃO tenha subido nenhum modelo:
+    if not caminho_modelo:
         tipo = detectar_tipo_curso(modalidade, nome_curso)
-        caminho_modelo = obter_caminho_modelo(tipo)
+        caminho_modelo_padrao = obter_caminho_modelo(tipo)
+        print(f"[INFO] Nenhum modelo customizado fornecido. Usando modelo padrão do sistema.")
         print(f"[INFO] Modalidade: '{modalidade}' | Curso: '{nome_curso}' => Tipo: '{tipo}'")
-        print(f"[INFO] Modelo selecionado: {caminho_modelo}")
-    else:
-        # Detecta tipo pelo nome do arquivo fornecido
-        tipo = "tecnico" if "tecnico" in caminho_modelo.lower() else "qualificacao"
+        print(f"[INFO] Modelo selecionado: {caminho_modelo_padrao}")
+        if tipo == "tecnico":
+            return _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo_padrao, caminho_saida, aplicar_logo=True)
+        else:
+            return _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo_padrao, caminho_saida, aplicar_logo=True)
 
+    # 2. Caso o usuário TENHA subido um modelo:
     if not os.path.exists(caminho_modelo):
-        print(f"[AVISO] Modelo '{caminho_modelo}' nao encontrado. Usando fallback.")
-        caminho_modelo = obter_caminho_modelo(tipo)
+        print(f"[AVISO] Arquivo de modelo customizado '{caminho_modelo}' não encontrado. Usando fallback.")
+        tipo = detectar_tipo_curso(modalidade, nome_curso)
+        caminho_modelo_padrao = obter_caminho_modelo(tipo)
+        if tipo == "tecnico":
+            return _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo_padrao, caminho_saida, aplicar_logo=True)
+        else:
+            return _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo_padrao, caminho_saida, aplicar_logo=True)
 
-    # Roteia para o gerador correspondente
-    if tipo == "tecnico":
-        return _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo, caminho_saida)
+    # Inspeciona a estrutura do modelo enviado
+    tipo_estrutura, eh_custom = identificar_estrutura_modelo(caminho_modelo)
+    print(f"[INFO] Estrutura do modelo enviado identificada como: '{tipo_estrutura}' (Customizado={eh_custom})")
+
+    if tipo_estrutura == "tecnico":
+        # Segue layout técnico, mas preserva a logo/identidade original do arquivo enviado
+        return _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo, caminho_saida, aplicar_logo=False)
+    elif tipo_estrutura == "qualificacao":
+        # Segue layout qualificação, preservando a logo/identidade original
+        return _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo, caminho_saida, aplicar_logo=False)
     else:
-        return _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo, caminho_saida)
+        # Preenchimento flexível para modelos personalizados de qualquer instituição de ensino
+        return _gerar_excel_customizado(dados_cabecalho, aulas, caminho_modelo, caminho_saida)
 
-def _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo, caminho_saida):
+
+def _gerar_excel_customizado(dados_cabecalho, aulas, caminho_modelo, caminho_saida=None):
+    """
+    Preenche uma planilha de planejamento docente personalizada enviada pelo professor ou instituição,
+    detectando dinamicamente os cabeçalhos institucionais e as colunas da tabela de aulas.
+    Preserva estilos, fontes, fórmulas e identidades visuais originais.
+    """
+    wb = openpyxl.load_workbook(caminho_modelo)
+    ws = wb.active
+
+    # 1. Localiza a linha do cabeçalho da tabela de aulas
+    linha_cabecalho = None
+    mapeamento_colunas = {}
+    maior_score = 0
+
+    palavras_chave_colunas = {
+        "conteudo": ["conteudo", "conteudos", "capacidade", "capacidades", "competencia", "competencias", "o que", "tema", "objeto de conhecimento", "conhecimento", "conhecimentos", "descricao", "descricao da aula", "plano de aula", "assunto", "unidade tematica"],
+        "estrategia": ["estrategia", "estrategias", "metodologia", "metodologias", "como", "procedimento", "procedimentos", "acao docente", "desenvolvimento", "atividades", "pratica pedagogica"],
+        "recursos": ["recurso", "recursos", "recursos didaticos", "material", "materiais", "equipamento", "equipamentos", "ferramentas"],
+        "ambiente": ["ambiente", "ambientes", "local", "onde", "espaco", "sala", "laboratorio"],
+        "carga_horaria": ["carga horaria", "ch", "horas", "duracao", "tempo"],
+        "criterios": ["criterio", "criterios", "criterios de avaliacao", "avaliacao", "desempenho"],
+        "instrumentos": ["instrumento", "instrumentos", "instrumentos de avaliacao", "forma de avaliacao"],
+        "situacao": ["situacao", "situacao de aprendizagem", "projeto", "desafio", "sa"],
+        "data_inicio": ["data inicio", "inicio", "quando", "data"],
+        "data_fim": ["data fim", "termino", "fim"],
+        "dia": ["aula", "dia", "encontro", "no", "item", "seq"]
+    }
+
+    limite_busca_linhas = min(ws.max_row + 1, 35)
+    limite_busca_cols = min(ws.max_column + 1, 30)
+
+    for r in range(1, limite_busca_linhas):
+        col_map_temp = {}
+        score = 0
+        for c in range(1, limite_busca_cols):
+            val = normalizar_texto_chave(ws.cell(row=r, column=c).value or "")
+            if not val:
+                continue
+            for tipo_col, termos in palavras_chave_colunas.items():
+                if any(t in val for t in termos):
+                    if tipo_col not in col_map_temp:
+                        col_map_temp[tipo_col] = c
+                        score += 1
+                    break
+        if score > maior_score and score >= 2:
+            maior_score = score
+            linha_cabecalho = r
+            mapeamento_colunas = col_map_temp
+
+    print(f"[INFO] Modelo customizado: Linha de cabeçalho detectada = {linha_cabecalho} (Score: {maior_score})")
+    print(f"[INFO] Mapeamento de colunas detectado: {mapeamento_colunas}")
+
+    # 2. Preenche os campos institucionais do cabeçalho (linhas acima da tabela de aulas)
+    limite_cabecalho = (linha_cabecalho - 1) if linha_cabecalho else min(12, ws.max_row)
+    for r in range(1, limite_cabecalho + 1):
+        for c in range(1, limite_busca_cols):
+            val = normalizar_texto_chave(ws.cell(row=r, column=c).value or "")
+            if not val or len(val) > 40:
+                continue
+
+            # Se encontrou rótulo de curso
+            if any(k in val for k in ["curso", "nome do curso"]):
+                alvo = ws.cell(row=r, column=c + 1)
+                if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                    alvo.value = str(dados_cabecalho.get("nome_curso", "")).strip().upper()
+
+            # Unidade Curricular / Componente Curricular / Disciplina
+            elif any(k in val for k in ["unidade curricular", "componente", "disciplina", "uc"]):
+                alvo = ws.cell(row=r, column=c + 1)
+                if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                    alvo.value = str(dados_cabecalho.get("unidade_curricular", "")).strip()
+
+            # Turma
+            elif "turma" in val and len(val) < 20:
+                alvo = ws.cell(row=r, column=c + 1)
+                if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                    alvo.value = str(dados_cabecalho.get("codigo_turma", "")).strip().upper()
+
+            # Professor / Docente / Instrutor
+            elif any(k in val for k in ["professor", "docente", "instrutor"]):
+                alvo = ws.cell(row=r, column=c + 1)
+                if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                    alvo.value = str(dados_cabecalho.get("instrutor", "")).strip().upper()
+
+            # Unidade Escolar / Instituição
+            elif any(k in val for k in ["unidade escolar", "escola", "instituicao", "centro"]) and dados_cabecalho.get("unidade_escolar"):
+                alvo = ws.cell(row=r, column=c + 1)
+                if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                    alvo.value = str(dados_cabecalho["unidade_escolar"]).strip()
+
+            # Carga Horária Total
+            elif any(k in val for k in ["carga horaria total", "ch total", "ch da uc"]):
+                alvo = ws.cell(row=r, column=c + 1)
+                if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                    alvo.value = dados_cabecalho.get("carga_horaria", "")
+
+            # Período / Datas
+            elif any(k in val for k in ["periodo", "datas"]):
+                d_ini = dados_cabecalho.get("data_inicio", "")
+                d_fim = dados_cabecalho.get("data_fim", "")
+                if d_ini and d_fim:
+                    alvo = ws.cell(row=r, column=c + 1)
+                    if not alvo.value or str(alvo.value).strip() in ("", ":", "-"):
+                        alvo.value = f"{d_ini} a {d_fim}"
+
+    # 3. Preenche as linhas de aulas
+    linha_inicio_dados = (linha_cabecalho + 1) if linha_cabecalho else 13
+
+    # Se não mapeou coluna de conteúdo, assume a coluna 1 ou 2
+    if "conteudo" not in mapeamento_colunas:
+        mapeamento_colunas["conteudo"] = 1
+
+    fonte_padrao = Font(name="Calibri", size=10)
+    borda_fina = Border(
+        left=Side(style="thin", color="CBD5E1"),
+        right=Side(style="thin", color="CBD5E1"),
+        top=Side(style="thin", color="CBD5E1"),
+        bottom=Side(style="thin", color="CBD5E1")
+    )
+    alin_esquerda = Alignment(horizontal="left", vertical="top", wrap_text=True)
+    alin_centro = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    for idx, aula in enumerate(aulas):
+        r = linha_inicio_dados + idx
+
+        # Prepara textos pedagógicos
+        cap = limpar_numeracao_texto(aula.get("capacidade", "")).strip()
+        con = limpar_numeracao_texto(aula.get("conhecimento", ""), separador="\n").strip()
+        if cap and con:
+            texto_conteudo = f"CAPACIDADE:\n{cap}\n\nCONHECIMENTOS:\n{con}"
+        else:
+            texto_conteudo = cap or con or "Desenvolvimento de competências técnicas"
+
+        if "dia" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["dia"], value=f"Aula {idx+1}")
+
+        if "conteudo" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["conteudo"], value=texto_conteudo)
+
+        if "estrategia" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["estrategia"], value=str(aula.get("estrategia", "")).strip())
+
+        if "ambiente" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["ambiente"], value=str(aula.get("ambiente", "Sala / Laboratório")).strip())
+
+        if "recursos" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["recursos"], value=str(aula.get("recursos", "Computadores / Recursos Didáticos")).strip())
+
+        if "carga_horaria" in mapeamento_colunas:
+            ch_val = str(aula.get("carga_horaria_str") or f"{aula.get('horas_aula', 4)}h")
+            ws.cell(row=r, column=mapeamento_colunas["carga_horaria"], value=ch_val)
+
+        if "criterios" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["criterios"], value=str(aula.get("criterios", "")).strip())
+
+        if "instrumentos" in mapeamento_colunas:
+            ws.cell(row=r, column=mapeamento_colunas["instrumentos"], value=str(aula.get("instrumentos", "")).strip())
+
+        if "situacao" in mapeamento_colunas:
+            sa_texto = obter_situacao_aprendizagem_padrao(aula, dados_cabecalho)
+            ws.cell(row=r, column=mapeamento_colunas["situacao"], value=sa_texto)
+
+        dt_ini = aula.get("data_inicio")
+        dt_fim = aula.get("data_fim", dt_ini)
+        if "data_inicio" in mapeamento_colunas:
+            c_dt = ws.cell(row=r, column=mapeamento_colunas["data_inicio"])
+            if isinstance(dt_ini, datetime):
+                c_dt.value = dt_ini.strftime("%d/%m/%Y")
+            else:
+                c_dt.value = str(dt_ini) if dt_ini else ""
+
+        if "data_fim" in mapeamento_colunas and mapeamento_colunas["data_fim"] != mapeamento_colunas.get("data_inicio"):
+            c_dt2 = ws.cell(row=r, column=mapeamento_colunas["data_fim"])
+            if isinstance(dt_fim, datetime):
+                c_dt2.value = dt_fim.strftime("%d/%m/%Y")
+            else:
+                c_dt2.value = str(dt_fim) if dt_fim else ""
+
+        # Aplica estilos e bordas
+        for col_idx in range(1, limite_busca_cols):
+            c_cell = ws.cell(row=r, column=col_idx)
+            if not c_cell.font or c_cell.font.name != "Calibri":
+                c_cell.font = fonte_padrao
+            if not c_cell.border or not c_cell.border.left.style:
+                c_cell.border = borda_fina
+            if col_idx == mapeamento_colunas.get("conteudo"):
+                c_cell.alignment = alin_esquerda
+            elif col_idx in (mapeamento_colunas.get("data_inicio"), mapeamento_colunas.get("data_fim"), mapeamento_colunas.get("carga_horaria"), mapeamento_colunas.get("dia")):
+                c_cell.alignment = alin_centro
+            else:
+                c_cell.alignment = alin_esquerda
+
+        ws.row_dimensions[r].height = calcular_altura_linha(
+            texto_conteudo,
+            str(aula.get("estrategia", "")),
+            str(aula.get("recursos", "")),
+            str(aula.get("criterios", "")),
+            str(aula.get("instrumentos", ""))
+        )
+
+    if not caminho_saida:
+        os.makedirs("outputs", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_uc_safe = "".join(c for c in dados_cabecalho.get("unidade_curricular", "UC") if c.isalnum() or c in (" ", "_", "-")).strip()
+        caminho_saida = f"outputs/Planejamento_Docente_Personalizado_{nome_uc_safe}_{timestamp}.xlsx"
+
+    wb.save(caminho_saida)
+    wb.close()
+    print(f"[OK] Planejamento Docente gerado em modelo personalizado: {caminho_saida}")
+    return caminho_saida
+
+def _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo, caminho_saida, aplicar_logo=True):
     """
     Preenche o modelo de Qualificação/Aperfeiçoamento (.xlsx).
     Layout (colunas):
@@ -305,7 +594,7 @@ def _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo, caminho_sa
         instrumentos_txt = str(aula.get("instrumentos", "")).strip().upper()
         ws.cell(row=r, column=16, value=instrumentos_txt)  # P: Instrumentos
 
-        ws.cell(row=r, column=17, value=str(aula.get("situacao_aprendizagem", "https://recursosdidaticos.senai.br")).strip())  # Q: SA
+        ws.cell(row=r, column=17, value=obter_situacao_aprendizagem_padrao(aula, dados_cabecalho))  # Q: SA
 
         # R e S: Datas
         dt_ini = aula.get("data_inicio")
@@ -355,13 +644,14 @@ def _gerar_excel_qualificacao(dados_cabecalho, aulas, caminho_modelo, caminho_sa
 
     wb.save(caminho_saida)
     wb.close()
-    garantir_logo_oficial(caminho_saida)
+    if aplicar_logo:
+        garantir_logo_oficial(caminho_saida)
     return caminho_saida
 
 
-def _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo, caminho_saida):
+def _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo, caminho_saida, aplicar_logo=True):
     """
-    Preenche o modelo de Curso Técnico (.xlsx) oficial do SENAI usando openpyxl.
+    Preenche o modelo de Curso Técnico (.xlsx) oficial usando openpyxl.
     Layout (colunas):
       A:C (1:3)   = O que? (Capacidade / Conhecimento)
       D   (4)     = Identificação - MATRIZ DE REFERÊNCIA SAEP
@@ -489,7 +779,7 @@ def _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo, caminho_saida):
         ws.cell(row=r, column=17, value=instrumentos_txt)
 
         # R: Situação de Aprendizagem
-        ws.cell(row=r, column=18, value=str(aula.get("situacao_aprendizagem", "https://recursosdidaticos.senai.br")).strip())
+        ws.cell(row=r, column=18, value=obter_situacao_aprendizagem_padrao(aula, dados_cabecalho))
 
         # S e T: Datas
         dt_ini = aula.get("data_inicio")
@@ -542,5 +832,6 @@ def _gerar_excel_tecnico(dados_cabecalho, aulas, caminho_modelo, caminho_saida):
 
     wb.save(caminho_saida)
     wb.close()
-    garantir_logo_oficial(caminho_saida)
+    if aplicar_logo:
+        garantir_logo_oficial(caminho_saida)
     return caminho_saida

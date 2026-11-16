@@ -212,19 +212,35 @@ def gerar_atividade_fallback(texto_base, dificuldade, tipo, quantidade):
             questoes.append(
                 f"Questão {i}: Explique a importância e a aplicação prática de {topico_exibicao} no contexto profissional, destacando seus principais benefícios e requisitos técnicos."
             )
+        elif tipo == "pratica":
+            questoes.append(
+                f"Questão {i} (Atividade Prática Aplicada): Desafio Prático sobre {topico_exibicao}\n"
+                f"- Contexto: Aplicação profissional em ambiente técnico/industrial simulando demanda real do setor.\n"
+                f"- Roteiro de Execução: 1) Planejamento e separação dos insumos/ferramentas; 2) Execução técnica do procedimento conforme normas regulamentadoras; 3) Testes funcionais e inspeção de qualidade.\n"
+                f"- Recursos e Segurança: Utilização de bancada/oficina e uso obrigatório de EPIs adequados.\n"
+                f"- Critérios de Avaliação: Conformidade do produto/processo final, cumprimento do prazo e boas práticas de segurança."
+            )
         else:
-            if i % 2 == 1:
+            # Formato Misto (Objetiva + Discursiva + Prática)
+            if i % 3 == 1:
                 questoes.append(
-                    f"Questão {i}: Com relação a {topico_exibicao}, identifique a alternativa correta:\n"
-                    f"A) Apresenta conformidade com as diretrizes e procedimentos padrão da disciplina.\n"
-                    f"B) Invalida os critérios de qualidade e boas práticas estabelecidos no setor.\n"
-                    f"C) Restringe-se exclusivamente a aspectos teóricos sem respaldo de aplicação.\n"
-                    f"D) Nenhuma das anteriores.\n"
+                    f"Questão {i}: Com base no estudo sobre {topico_exibicao}, assinale a alternativa correta:\n"
+                    f"A) Trata-se de um conceito fundamental aplicado nos procedimentos operacionais da área técnica.\n"
+                    f"B) Refere-se a uma abordagem obsoleta desprovida de aplicação prática nas diretrizes vigentes.\n"
+                    f"C) Não possui relação com os critérios de conformidade e qualidade recomendados.\n"
+                    f"D) Representa uma técnica secundária cuja utilização é desaconselhada nos padrões atuais.\n"
                     f"Resposta correta: A"
+                )
+            elif i % 3 == 2:
+                questoes.append(
+                    f"Questão {i}: Explique a importância e a aplicação prática de {topico_exibicao} no contexto profissional, destacando seus principais benefícios e requisitos técnicos."
                 )
             else:
                 questoes.append(
-                    f"Questão {i}: Descreva sucintamente como os princípios de {topico_exibicao} devem ser aplicados na resolução de problemas do setor."
+                    f"Questão {i} (Atividade Prática): Desafio Prático Aplicado sobre {topico_exibicao}.\n"
+                    f"- Contexto: Simulação de bancada, laboratório ou oficina técnica especializada.\n"
+                    f"- Roteiro de Execução: Executar a montagem, configuração ou procedimento operacional seguindo as normas.\n"
+                    f"- Critérios de Avaliação: Funcionamento correto, organização, cumprimento das normas técnicas e segurança."
                 )
 
     return "\n\n".join(questoes)
@@ -251,31 +267,73 @@ def gerar_atividade(texto_pdf, dificuldade, tipo="objetiva", quantidade=5):
     # 2. Instruções direcionadas e objetivas
     if tipo == "objetiva":
         instrucao_tipo = (
-            f"Crie EXATAMENTE {quantidade} questões OBJETIVAS de múltipla escolha de nível {dificuldade}. "
-            "Cada questão DEVE ter 4 alternativas (A, B, C, D) e indicar claramente 'Resposta correta: X'."
+            f"Crie EXATAMENTE {quantidade} questões OBJETIVAS de múltipla escolha no PADRÃO SAEP de nível {dificuldade}. "
+            "Cada questão DEVE ter EXATAMENTE 5 alternativas (A, B, C, D, E). "
+            "REGRAS SAEP OBRIGATÓRIAS: (1) Nunca use pegadinhas; (2) Nunca induza o aluno ao erro; "
+            "(3) As alternativas incorretas devem ser plausíveis mas claramente distinguíveis; "
+            "(4) Após indicar 'Resposta correta: X', inclua obrigatoriamente 'Justificativa: [explicação clara e didática da resposta correta]'."
         )
-        formato = "Questão 1: [Enunciado técnico contextualizado]\nA) ...\nB) ...\nC) ...\nD) ...\nResposta correta: A"
-        tokens_por_questao = 150
+        formato = (
+            "Questão 1: [Enunciado técnico contextualizado e claro]\n"
+            "A) ...\nB) ...\nC) ...\nD) ...\nE) ...\n"
+            "Resposta correta: A\n"
+            "Justificativa: [Explicação clara e didática do porquê a alternativa A é correta]"
+        )
+        tokens_por_questao = 220
     elif tipo == "discursiva":
         instrucao_tipo = (
             f"Crie EXATAMENTE {quantidade} questões DISCURSIVAS analíticas de nível {dificuldade} para resposta dissertativa técnica."
         )
-        formato = "Questão 1: [Enunciado reflexivo/prático]\n\nQuestão 2: [Enunciado]"
-        tokens_por_questao = 100
-    else:
-        metade = quantidade // 2
-        resto = quantidade - metade
+        formato = "Questão 1: [Enunciado reflexivo/técnico]\n\nQuestão 2: [Enunciado]"
+        tokens_por_questao = 110
+    elif tipo == "pratica":
         instrucao_tipo = (
-            f"Crie EXATAMENTE {quantidade} questões de nível {dificuldade}: {metade} OBJETIVAS (com A, B, C, D e Resposta correta) "
-            f"e {resto} DISCURSIVAS."
+            f"Crie EXATAMENTE {quantidade} ATIVIDADES PRÁTICAS / DESAFIOS TÉCNICOS APLICADOS de nível {dificuldade} voltados para laboratório, oficina ou estudo de caso de simulação profissional. "
+            "Cada atividade DEVE conter: Contextualização do Problema, Roteiro de Execução Passo a Passo, Recursos/Ferramentas necessárias e Critérios de Avaliação."
         )
-        formato = "Questão 1: [Enunciado objetiva]\nA) ...\nB) ...\nC) ...\nD) ...\nResposta correta: A\n\nQuestão 2: [Enunciado discursiva]"
-        tokens_por_questao = 130
+        formato = (
+            "Questão 1: [Desafio Prático Aplicado: Título do Procedimento]\n"
+            "Contexto: [Situação real da indústria ou oficina]\n"
+            "Roteiro de Execução: [Passo a passo com etapas técnicas a executar]\n"
+            "Recursos e Segurança: [Ferramentas, instrumentos e normas de segurança/EPIs]\n"
+            "Critérios de Avaliação: [Checklist do que será avaliado no resultado final]"
+        )
+        tokens_por_questao = 200
+    else:
+        # Formato Misto (combina questões Objetivas, Discursivas e Práticas)
+        qtd_pratica = max(1, quantidade // 3) if quantidade >= 3 else (1 if quantidade >= 2 else 0)
+        qtd_restante = quantidade - qtd_pratica
+        qtd_obj = qtd_restante // 2
+        qtd_disc = qtd_restante - qtd_obj
+        if qtd_obj == 0 and qtd_restante > 0:
+            qtd_obj = 1
+            qtd_disc = max(0, qtd_restante - 1)
+
+        partes_desc = []
+        if qtd_obj > 0:
+            partes_desc.append(f"{qtd_obj} OBJETIVAS (múltipla escolha padrão SAEP com A, B, C, D, E — sem pegadinhas, com Resposta correta e Justificativa)")
+        if qtd_disc > 0:
+            partes_desc.append(f"{qtd_disc} DISCURSIVAS (dissertativas técnicas)")
+        if qtd_pratica > 0:
+            partes_desc.append(f"{qtd_pratica} ATIVIDADE(S) PRÁTICA(S) (desafio técnico aplicado com contexto, passo a passo e critérios de avaliação)")
+
+        instrucao_tipo = (
+            f"Crie EXATAMENTE {quantidade} questões de nível {dificuldade} combinando teoria e prática: "
+            + ", ".join(partes_desc) + "."
+        )
+        formato = (
+            "Questão 1: [Objetiva padrão SAEP com alternativas A, B, C, D, E — sem pegadinhas]\n"
+            "A) ...\nB) ...\nC) ...\nD) ...\nE) ...\n"
+            "Resposta correta: X\nJustificativa: [Explicação didática da resposta]\n\n"
+            "Questão 2: [Discursiva dissertativa técnica]\n\n"
+            "Questão 3: [Atividade Prática Aplicada com Contexto, Roteiro e Critérios de Avaliação]"
+        )
+        tokens_por_questao = 190
 
     num_predict = min(3500, max(600, quantidade * tokens_por_questao))
     conteudo_pedagogico = extrair_conteudo_pedagogico(texto_pdf)
 
-    system_prompt = "Você é um professor especialista do SENAI responsável por criar atividades avaliativas rigorosas e de alta qualidade técnica."
+    system_prompt = "Você é um professor especialista e coordenador pedagógico responsável por criar atividades avaliativas rigorosas e de alta qualidade técnica de acordo com as diretrizes educacionais."
     prompt = f"""Crie a lista de questões avaliativas abaixo baseando-se estritamente nestes conteúdos técnicos e objetivos pedagógicos:
 ---
 {conteudo_pedagogico}
@@ -283,12 +341,13 @@ def gerar_atividade(texto_pdf, dificuldade, tipo="objetiva", quantidade=5):
 
 {instrucao_tipo}
 
-REGRAS OBRIGATÓRIAS:
+REGRAS OBRIGATÓRIAS (PADRÃO SAEP):
 1. Comece DIRETAMENTE com "Questão 1:" sem introdução, cumprimentos ou saudações.
 2. Numere de 1 até {quantidade}: "Questão 1:", "Questão 2:", etc.
 3. Não use formatação markdown pesada ou asteriscos desnecessários (evite **).
 4. As questões devem focar EXCLUSIVAMENTE nos conceitos técnicos da disciplina. NUNCA faça perguntas sobre cabeçalhos administrativos, identificação de curso, carga horária ou recursos didáticos.
-5. Siga rigorosamente o formato:
+5. Para questões objetivas (padrão SAEP): use EXATAMENTE 5 alternativas (A, B, C, D, E). NUNCA use pegadinhas. NUNCA induza o aluno ao erro. Todas as alternativas incorretas devem ser plausíveis. Após a resposta correta, inclua sempre a Justificativa explicando o porquê.
+6. Siga rigorosamente o formato:
 {formato}
 
 Gere as {quantidade} questões agora:"""

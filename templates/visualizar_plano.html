@@ -95,32 +95,54 @@
 
     <!-- Seção: Gerar Atividade baseada no plano -->
     <div class="card-modern shadow-sm mb-4">
-        <div class="card-header-modern bg-light py-3 d-flex align-items-center gap-2">
-            <i class="bi bi-check2-square text-success fs-5"></i>
-            <h5 class="mb-0 fw-bold text-dark fs-6">Gerar Atividade Avaliativa a partir deste Plano</h5>
+        <div class="card-header-modern bg-light py-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-check2-square text-success fs-5"></i>
+                <h5 class="mb-0 fw-bold text-dark fs-6">Gerar Atividade Avaliativa a partir deste Plano</h5>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 small">
+                Taxonomia de Bloom &bull; SENAI
+            </span>
         </div>
         <div class="card-body p-4">
-            <form action="/gerar_atividade_plano/{{ plano[0] }}" method="GET" class="row g-3 align-items-end">
+            <form action="/gerar_atividade_plano/{{ plano[0] }}" method="GET" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">
-                        <i class="bi bi-ui-checks text-primary"></i> Formato da Avaliação
+                    <label class="form-label fw-semibold text-dark small">
+                        <i class="bi bi-ui-checks text-primary me-1"></i> Formato da Avaliação
                     </label>
                     <select name="tipo" class="form-select form-select-lg">
                         <option value="objetiva">Objetiva (Múltipla Escolha)</option>
-                        <option value="discursiva">Discursiva</option>
-                        <option value="mista" selected>Mista</option>
+                        <option value="discursiva">Discursiva (Dissertativa)</option>
+                        <option value="pratica">Prática (Oficina / Laboratório)</option>
+                        <option value="mista" selected>Mista (Teórica + Prática)</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="bi bi-hash text-primary"></i> Questões
-                    </label>
-                    <input type="number" name="quantidade" class="form-control form-control-lg"
-                           value="5" min="1" max="50">
-                </div>
+
                 <div class="col-md-3">
-                    <label class="form-label">
-                        <i class="bi bi-speedometer2 text-primary"></i> Dificuldade
+                    <label class="form-label fw-semibold text-dark small">
+                        <i class="bi bi-database-fill text-success me-1"></i> Fonte das Atividades
+                    </label>
+                    <select name="fonte" class="form-select form-select-lg">
+                        <option value="repositorio">Do Repositório</option>
+                        <option value="externo">Externo (IA / Geração Nova)</option>
+                        <option value="mista" selected>Mista (Repositório + Externo)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-dark small">
+                        <i class="bi bi-person-gear text-info me-1"></i> Autoria
+                    </label>
+                    <select name="autoria" class="form-select form-select-lg">
+                        <option value="professor">Do Professor</option>
+                        <option value="ia">Da IA</option>
+                        <option value="mista" selected>Mista (Prof. + IA)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-dark small">
+                        <i class="bi bi-speedometer2 text-warning me-1"></i> Dificuldade
                     </label>
                     <select name="dificuldade" class="form-select form-select-lg">
                         <option value="fácil">Fácil</option>
@@ -128,13 +150,22 @@
                         <option value="difícil">Difícil</option>
                     </select>
                 </div>
-                <div class="col-md-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-success btn-lg flex-grow-1 fw-bold shadow-sm">
-                        <i class="bi bi-cpu"></i> Gerar Atividade
-                    </button>
-                    <a href="/curso/{{ plano[1] }}" class="btn btn-outline-secondary btn-lg">
-                        <i class="bi bi-arrow-left"></i> Voltar
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-dark small">
+                        <i class="bi bi-hash text-muted me-1"></i> Questões
+                    </label>
+                    <input type="number" name="quantidade" class="form-control form-control-lg text-center"
+                           value="5" min="1" max="50">
+                </div>
+
+                <div class="col-12 d-flex gap-2 justify-content-end mt-3 pt-3 border-top">
+                    <a href="/curso/{{ plano[1] }}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar ao Curso
                     </a>
+                    <button type="submit" class="btn btn-success btn-lg px-4 fw-bold shadow-sm">
+                        <i class="bi bi-lightning-charge-fill me-1"></i> Gerar Atividade Avaliativa
+                    </button>
                 </div>
             </form>
         </div>

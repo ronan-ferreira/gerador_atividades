@@ -132,7 +132,7 @@ Comece diretamente com "1. Identificacao:"."""
     try:
         plano = chamar_ia(
             prompt=prompt,
-            system_prompt="Você é um especialista em planejamento pedagógico do SENAI.",
+            system_prompt="Você é um especialista em planejamento pedagógico docente.",
             max_tokens=600,
             temperature=0.1
         )
@@ -211,7 +211,7 @@ def gerar_plano_aula_de_planejamento(aula, nome_curso, uc, horas_dia, usar_ia=Fa
 
     # Enriquecimento opcional via IA se requisitado
     try:
-        prompt = f"""Voce e especialista pedagogico do SENAI.
+        prompt = f"""Voce e especialista pedagogico docente.
 Aprimore o seguinte plano de aula mantendo rigorosamente a estrutura numerada de 1 a 6:
 Curso: {nome_curso} | UC: {uc} | Dia: {dia} | Nivel Bloom: {aula.get('nivel_bloom', 'Aplicar')}
 Capacidade: {aula.get('capacidade', '')}
@@ -221,7 +221,7 @@ Conteudo: {aula.get('conhecimento', '')}
 
         plano_ia = chamar_ia(
             prompt=prompt,
-            system_prompt="Você é um especialista pedagógico do SENAI.",
+            system_prompt="Você é um especialista em planejamento pedagógico docente.",
             max_tokens=550,
             temperature=0.2
         )

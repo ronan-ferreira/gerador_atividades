@@ -22,6 +22,20 @@ COMMENT ON TABLE usuarios IS 'Usuários do sistema (professores e administradore
 COMMENT ON COLUMN usuarios.perfil IS 'Perfil do usuário: professor ou admin';
 
 -- ============================================================
+-- TABELA: codigos_recuperacao (OTP para recuperação de senha)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS codigos_recuperacao (
+    id          SERIAL PRIMARY KEY,
+    usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    codigo      VARCHAR(10) NOT NULL,
+    tentativas  INTEGER NOT NULL DEFAULT 0,
+    usado       BOOLEAN NOT NULL DEFAULT FALSE,
+    criado_em   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expira_em   TIMESTAMP NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_codigos_recuperacao_user ON codigos_recuperacao(usuario_id, usado, expira_em);
+
+-- ============================================================
 -- TABELA: atividades
 -- ============================================================
 CREATE TABLE IF NOT EXISTS atividades (

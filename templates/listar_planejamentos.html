@@ -10,10 +10,10 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-2 border-bottom">
         <div>
             <h2 class="fw-bold mb-1">
-                Planejamentos Docentes (Excel)
+                Planejamentos Docentes (Excel / Word)
             </h2>
             <p class="text-muted mb-0 small">
-                Planilhas oficiais preenchidas com Taxonomia de Bloom, capacidades e cronograma de encontros.
+                Documentos e planilhas preenchidos com Taxonomia de Bloom, capacidades e cronograma de encontros.
             </p>
         </div>
 
@@ -133,9 +133,10 @@
                                             <span>Gerar Planos</span>
                                         </a>
                                     {% endif %}
-                                    <a href="/baixar_planejamento/{{ p[0] }}" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm" title="Baixar arquivo Excel (.xlsx) preenchido">
-                                        <i class="bi bi-file-earmark-excel"></i>
-                                        <span>Excel</span>
+                                    {% set eh_word = p[10] and (p[10].lower().endswith('.docx') or p[10].lower().endswith('.doc')) %}
+                                    <a href="/baixar_planejamento/{{ p[0] }}" class="btn {{ 'btn-primary' if eh_word else 'btn-success' }} btn-sm d-inline-flex align-items-center gap-1 shadow-sm" title="Baixar arquivo {{ 'Word (.docx)' if eh_word else 'Excel (.xlsx)' }} preenchido">
+                                        <i class="bi {{ 'bi-file-earmark-word' if eh_word else 'bi-file-earmark-excel' }}"></i>
+                                        <span>{{ 'Word' if eh_word else 'Excel' }}</span>
                                     </a>
                                     <a href="/deletar_planejamento/{{ p[0] }}" class="btn btn-outline-danger btn-sm shadow-sm"
                                        onclick="return confirm('Deseja realmente excluir este planejamento docente e arquivos associados?')" title="Excluir planejamento">

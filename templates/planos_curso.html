@@ -83,31 +83,67 @@
                 <!-- Formulário colapsável para gerar atividade a partir do plano -->
                 <div class="collapse" id="gerarAtividade{{ plano[0] }}">
                     <div class="p-3 bg-light border-bottom">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-sliders text-primary"></i>
+                            <strong class="small text-dark">Personalizar Geração de Atividade &bull; Dia {{ plano[2] }}</strong>
+                        </div>
                         <form action="/gerar_atividade_plano/{{ plano[0] }}" method="GET" class="row g-2 align-items-end">
-                            <div class="col-md-4">
-                                <label class="form-label small mb-1">Formato</label>
+                            <div class="col-md-3 col-sm-6">
+                                <label class="form-label small mb-1 fw-semibold text-dark">
+                                    <i class="bi bi-ui-checks text-primary me-1"></i> Formato
+                                </label>
                                 <select name="tipo" class="form-select form-select-sm">
                                     <option value="objetiva">Objetiva (Múltipla Escolha)</option>
-                                    <option value="discursiva">Discursiva</option>
-                                    <option value="mista" selected>Mista</option>
+                                    <option value="discursiva">Discursiva (Dissertativa)</option>
+                                    <option value="pratica">Prática (Oficina / Lab)</option>
+                                    <option value="mista" selected>Mista (Teórica + Prática)</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Quantidade</label>
-                                <input type="number" name="quantidade" class="form-control form-control-sm"
-                                       value="5" min="1" max="50">
+
+                            <div class="col-md-3 col-sm-6">
+                                <label class="form-label small mb-1 fw-semibold text-dark">
+                                    <i class="bi bi-database-fill text-success me-1"></i> Fonte
+                                </label>
+                                <select name="fonte" class="form-select form-select-sm">
+                                    <option value="repositorio">Do Repositório</option>
+                                    <option value="externo">Externo (IA)</option>
+                                    <option value="mista" selected>Mista (Repo + Externo)</option>
+                                </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Dificuldade</label>
+
+                            <div class="col-md-2 col-sm-4">
+                                <label class="form-label small mb-1 fw-semibold text-dark">
+                                    <i class="bi bi-person-gear text-info me-1"></i> Autoria
+                                </label>
+                                <select name="autoria" class="form-select form-select-sm">
+                                    <option value="professor">Do Professor</option>
+                                    <option value="ia">Da IA</option>
+                                    <option value="mista" selected>Mista (Prof. + IA)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-2 col-sm-4">
+                                <label class="form-label small mb-1 fw-semibold text-dark">
+                                    <i class="bi bi-speedometer2 text-warning me-1"></i> Dificuldade
+                                </label>
                                 <select name="dificuldade" class="form-select form-select-sm">
                                     <option value="fácil">Fácil</option>
                                     <option value="médio" selected>Médio</option>
                                     <option value="difícil">Difícil</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-success btn-sm w-100">
-                                    <i class="bi bi-cpu"></i> Gerar
+
+                            <div class="col-md-1 col-sm-4">
+                                <label class="form-label small mb-1 fw-semibold text-dark">
+                                    <i class="bi bi-hash text-muted"></i> Qtd
+                                </label>
+                                <input type="number" name="quantidade" class="form-control form-control-sm text-center"
+                                       value="5" min="1" max="50">
+                            </div>
+
+                            <div class="col-md-1 col-12">
+                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold shadow-xs" title="Gerar Atividade Avaliativa">
+                                    <i class="bi bi-lightning-charge-fill"></i> Gerar
                                 </button>
                             </div>
                         </form>

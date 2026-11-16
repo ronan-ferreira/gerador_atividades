@@ -159,8 +159,9 @@
                             <select name="tipo" id="selectTipo" class="form-select form-select-lg">
                                 {% set tip_val = dados_form.tipo if dados_form else request.args.get('tipo', 'mista') %}
                                 <option value="objetiva" {% if tip_val == 'objetiva' %}selected{% endif %}>Objetiva (Múltipla Escolha)</option>
-                                <option value="discursiva" {% if tip_val == 'discursiva' %}selected{% endif %}>Discursiva</option>
-                                <option value="mista" {% if tip_val == 'mista' %}selected{% endif %}>Mista (Objetiva + Discursiva)</option>
+                                <option value="discursiva" {% if tip_val == 'discursiva' %}selected{% endif %}>Discursiva (Dissertativa)</option>
+                                <option value="pratica" {% if tip_val == 'pratica' %}selected{% endif %}>Prática (Oficina / Laboratório)</option>
+                                <option value="mista" {% if tip_val == 'mista' %}selected{% endif %}>Mista (Teórica + Prática)</option>
                             </select>
                         </div>
                         <div class="col-md-4">

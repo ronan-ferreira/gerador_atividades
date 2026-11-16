@@ -45,22 +45,28 @@ def _executar_migracoes_iniciais():
             ALTER TABLE planejamentos_docente ADD COLUMN IF NOT EXISTS modalidade VARCHAR(100);
             ALTER TABLE planejamentos_docente ADD COLUMN IF NOT EXISTS curso_id INTEGER REFERENCES cursos_plano(id) ON DELETE SET NULL;
             ALTER TABLE planos_aula ADD COLUMN IF NOT EXISTS planejamento_id INTEGER REFERENCES planejamentos_docente(id) ON DELETE SET NULL;
-            ALTER TABLE atividades ADD COLUMN IF NOT EXISTS origem VARCHAR(50) DEFAULT 'ia';
+            ALTER TABLE atividades ADD COLUMN IF NOT EXISTS origem VARCHAR(100) DEFAULT 'ia';
+            ALTER TABLE atividades ALTER COLUMN conteudo TYPE TEXT;
+            ALTER TABLE atividades ALTER COLUMN origem TYPE VARCHAR(100);
 
             CREATE TABLE IF NOT EXISTS repositorio_atividades (
                 id SERIAL PRIMARY KEY,
                 curso VARCHAR(150) NOT NULL,
                 disciplina VARCHAR(150) NOT NULL,
-                conteudo VARCHAR(255) NOT NULL,
+                conteudo TEXT NOT NULL,
                 dificuldade VARCHAR(50) NOT NULL DEFAULT 'médio',
                 tipo VARCHAR(50) NOT NULL DEFAULT 'objetiva',
                 enunciado TEXT NOT NULL,
                 alternativas TEXT,
                 resposta_correta TEXT,
-                origem VARCHAR(20) NOT NULL DEFAULT 'professor',
+                origem VARCHAR(50) NOT NULL DEFAULT 'professor',
                 usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
                 data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            ALTER TABLE repositorio_atividades ALTER COLUMN conteudo TYPE TEXT;
+            ALTER TABLE repositorio_atividades ALTER COLUMN origem TYPE VARCHAR(50);
+            ALTER TABLE repositorio_atividades ALTER COLUMN tipo TYPE VARCHAR(50);
 
             CREATE INDEX IF NOT EXISTS idx_repositorio_curso ON repositorio_atividades(curso);
             CREATE INDEX IF NOT EXISTS idx_repositorio_disciplina ON repositorio_atividades(disciplina);
@@ -68,6 +74,18 @@ def _executar_migracoes_iniciais():
             CREATE INDEX IF NOT EXISTS idx_repositorio_origem ON repositorio_atividades(origem);
             CREATE INDEX IF NOT EXISTS idx_repositorio_dificuldade ON repositorio_atividades(dificuldade);
             CREATE INDEX IF NOT EXISTS idx_repositorio_tipo ON repositorio_atividades(tipo);
+
+            CREATE TABLE IF NOT EXISTS codigos_recuperacao (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                codigo VARCHAR(10) NOT NULL,
+                tentativas INTEGER NOT NULL DEFAULT 0,
+                usado BOOLEAN NOT NULL DEFAULT FALSE,
+                criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                expira_em TIMESTAMP NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_codigos_recuperacao_user ON codigos_recuperacao(usuario_id, usado, expira_em);
         """)
         cur.close()
         conexao_pool.putconn(conn)

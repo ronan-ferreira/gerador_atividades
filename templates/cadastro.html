@@ -23,41 +23,53 @@
     <div class="container-fluid p-0">
         <div class="row g-0 auth-wrapper">
 
-            <!-- PAINEL ESQUERDO -->
+            <!-- PAINEL ESQUERDO (CENTRALIZADO E INTEGRADO) -->
             <div class="col-lg-6 auth-sidebar d-none d-lg-flex">
                 <div class="auth-sidebar-content">
-                    <a href="/" class="auth-sidebar-brand text-decoration-none">
+                    <div class="mb-3">
+                        <span class="badge bg-white text-primary border shadow-xs px-3 py-1.5 rounded-pill fw-semibold">
+                            <i class="bi bi-mortarboard-fill me-1"></i> Acesso Docente &bull; SGPP
+                        </span>
+                    </div>
+
+                    <a href="/" class="auth-sidebar-brand text-decoration-none mb-3">
                         <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4" alt="Logo SGPP" width="46" height="46">
                         <div class="text-start">
-                            <h4 class="mb-0 fw-bold text-dark">SGPP</h4>
-                            <span class="text-muted small">Sistema de Gestão e Planejamento Pedagógico</span>
+                            <h4 class="mb-0 fw-bold text-dark lh-1">SGPP</h4>
+                            <span class="text-muted small" style="font-size: 0.78rem;">Gestão e Planejamento Pedagógico</span>
                         </div>
                     </a>
 
-                    <div class="auth-hero-copy text-start">
-                        <h1 class="auth-main-title fw-bold text-dark mb-3">
+                    <div class="auth-hero-copy text-center mb-3">
+                        <h1 class="auth-main-title fw-bold text-dark mb-2">
                             Cadastro de Conta Docente
                         </h1>
-                        <p class="auth-main-subtitle text-muted mb-0">
-                            Crie seu acesso para elaborar planejamentos curriculares, planos de aula e avaliações.
+                        <p class="auth-main-subtitle text-muted mx-auto mb-0" style="max-width: 440px;">
+                            Crie seu acesso exclusivo para estruturar planos de aula, avaliações e planejamentos pedagógicos alinhados à BNCC.
                         </p>
                     </div>
 
-                    <div class="text-center my-auto py-3">
+                    <div class="auth-illustration-container text-center my-auto py-2">
                         <img src="{{ url_for('static', filename='img/computador.png') }}"
                              alt="Sistema de Planejamento Pedagógico"
                              class="img-fluid auth-illustration">
                     </div>
+
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <span class="auth-feature-pill"><i class="bi bi-diagram-3-fill text-primary"></i> Taxonomia de Bloom</span>
+                        <span class="auth-feature-pill"><i class="bi bi-file-earmark-word-fill text-primary"></i> Exportação Word</span>
+                        <span class="auth-feature-pill"><i class="bi bi-check2-circle text-primary"></i> Alinhado à BNCC</span>
+                    </div>
                 </div>
 
-                <div class="pt-3 border-top border-secondary border-opacity-10 text-muted small text-start">
-                    SGPP &mdash; Sistema de Gestão e Planejamento Pedagógico &copy; 2026. Acesso ao corpo docente.
+                <div class="auth-sidebar-footer pt-3 border-top border-secondary border-opacity-10 text-muted small text-center">
+                    <i class="bi bi-shield-check text-success me-1"></i> SGPP &copy; 2026 &mdash; Ambiente seguro para o corpo docente.
                 </div>
             </div>
 
             <!-- PAINEL DIREITO (FORMULÁRIO DE CADASTRO) -->
             <div class="col-12 col-lg-6 auth-main">
-                <div class="w-100" style="max-width: 460px;">
+                <div class="w-100" style="max-width: 470px;">
 
                     <!-- Cabeçalho Mobile/Tablet -->
                     <div class="d-flex d-lg-none align-items-center justify-content-center gap-3 mb-4 text-start">
@@ -72,61 +84,67 @@
 
                     <div class="auth-card">
                         <div class="text-center mb-4">
-                            <div class="auth-card-icon">
+                            <div class="auth-card-icon shadow-sm">
                                 <i class="bi bi-person-plus-fill"></i>
                             </div>
-                            <h2 class="fw-bold mb-1 text-dark fs-3">Novo Cadastro</h2>
-                            <p class="text-muted small mb-0">Crie sua conta docente para acessar as ferramentas pedagógicas</p>
+                            <h2 class="fw-bold mb-1 text-dark fs-3">Criar Conta Docente</h2>
+                            <p class="text-muted small mb-0">Preencha os dados abaixo para iniciar seu cadastro</p>
                         </div>
 
                         {% if erro %}
-                        <div class="alert alert-danger py-2 px-3 mb-4 d-flex align-items-center gap-2 small rounded-3" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <div class="alert alert-danger py-2.5 px-3 mb-4 d-flex align-items-center gap-2 small rounded-3 shadow-xs border-danger-subtle" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger flex-shrink-0"></i>
                             <div>{{ erro }}</div>
                         </div>
                         {% endif %}
 
                         <form method="POST">
                             <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="bi bi-person text-primary"></i> Nome Completo <span class="text-danger">*</span>
+                                <label class="form-label fw-semibold text-dark small">
+                                    <i class="bi bi-person text-primary me-1"></i> Nome Completo <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" name="nome" class="form-control form-control-lg"
-                                       placeholder="Ex: Prof. Carlos Eduardo" required autofocus>
+                                <input type="text" name="nome" class="form-control form-control-lg auth-input"
+                                       placeholder="Ex: Prof. Carlos Eduardo" required autofocus autocomplete="name">
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="bi bi-envelope text-primary"></i> E-mail <span class="text-danger">*</span>
+                                <label class="form-label fw-semibold text-dark small">
+                                    <i class="bi bi-envelope text-primary me-1"></i> E-mail Institucional <span class="text-danger">*</span>
                                 </label>
-                                <input type="email" name="email" class="form-control form-control-lg"
-                                       placeholder="seu.email@email.com" required>
+                                <input type="email" name="email" class="form-control form-control-lg auth-input"
+                                       placeholder="seu.email@escola.com" required autocomplete="email">
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label">
-                                    <i class="bi bi-key text-primary"></i> Senha <span class="text-danger">*</span>
+                                <label class="form-label fw-semibold text-dark small">
+                                    <i class="bi bi-key text-primary me-1"></i> Senha de Acesso <span class="text-danger">*</span>
                                 </label>
-                                <input type="password" name="senha" class="form-control form-control-lg"
-                                       placeholder="Mínimo 3 caracteres" minlength="3" required>
-                                <div class="form-text small">Use uma senha segura para proteger seus planejamentos.</div>
+                                <input type="password" name="senha" class="form-control form-control-lg auth-input"
+                                       placeholder="Mínimo 3 caracteres" minlength="3" required autocomplete="new-password">
+                                <div class="form-text small text-muted mt-1">
+                                    <i class="bi bi-shield-lock me-1"></i> Use uma senha segura para proteger seus planejamentos.
+                                </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
-                                <i class="bi bi-check-circle-fill"></i> Concluir Cadastro
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm auth-btn-submit">
+                                <i class="bi bi-check-circle-fill me-1"></i> Concluir Cadastro
                             </button>
                         </form>
 
                         <div class="text-center mt-4 pt-3 border-top">
                             <span class="text-muted small">Já possui cadastro?</span>
                             <a href="/login" class="fw-bold text-primary text-decoration-none ms-1 small">
-                                Fazer login
+                                Fazer login &rarr;
                             </a>
                             <div class="mt-2">
                                 <a href="/" class="text-muted text-decoration-none small">
                                     <i class="bi bi-arrow-left"></i> Voltar para a Página Inicial
                                 </a>
                             </div>
+                        </div>
+
+                        <div class="text-center mt-3 text-muted" style="font-size: 0.78rem;">
+                            <i class="bi bi-shield-check text-success me-1"></i> Ambiente Seguro com Criptografia
                         </div>
                     </div>
                 </div>

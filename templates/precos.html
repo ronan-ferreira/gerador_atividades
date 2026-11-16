@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planos e Preços &mdash; SGPP</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}?v=4">
+
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- CSS Customizado -->
+    <link href="{{ url_for('static', filename='css/style.css') }}?v=4" rel="stylesheet">
+
+    <style>
+        /* ── Pricing Cards ─────────────────────────────────── */
+        .pricing-hero {
+            background: linear-gradient(135deg, #1a1f36 0%, #2d3561 100%);
+            padding: 80px 0 100px;
+            position: relative;
+            overflow: hidden;
+        }
+        .pricing-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 50% at 70% 50%, rgba(99,102,241,.18) 0%, transparent 70%);
+        }
+        .pricing-hero-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.15;
+        }
+        .pricing-hero-sub {
+            color: rgba(255,255,255,.65);
+            font-size: 1.05rem;
+            max-width: 540px;
+            margin: 0 auto;
+        }
+        .pricing-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 50px;
+            padding: 4px 14px;
+            font-size: .8rem;
+            font-weight: 600;
+            color: rgba(255,255,255,.75);
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+        }
+        .pricing-eyebrow-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #6366f1;
+            display: inline-block;
+        }
+
+        /* Cards */
+        .pricing-card {
+            background: #fff;
+            border: 1.5px solid #e8eaf0;
+            border-radius: 20px;
+            padding: 36px 32px 32px;
+            display: flex;
+            flex-direction: column;
+            transition: transform .25s, box-shadow .25s, border-color .25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .pricing-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 50px rgba(0,0,0,.10);
+        }
+        .pricing-card--featured {
+            border-color: #6366f1;
+            box-shadow: 0 8px 40px rgba(99,102,241,.18);
+        }
+        .pricing-card--featured:hover {
+            box-shadow: 0 20px 60px rgba(99,102,241,.28);
+        }
+        .pricing-card--gold {
+            border-color: #f59e0b;
+        }
+        .pricing-card--gold:hover {
+            box-shadow: 0 20px 60px rgba(245,158,11,.18);
+        }
+
+        /* Badge */
+        .pricing-badge {
+            display: inline-block;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            padding: 3px 12px;
+            border-radius: 50px;
+            margin-bottom: 16px;
+        }
+        .pricing-badge--indigo {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+        .pricing-badge--gold {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        /* Period label */
+        .pricing-period {
+            font-size: .82rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        /* Price */
+        .pricing-price-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 2px;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .pricing-currency {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #374151;
+            margin-top: 10px;
+        }
+        .pricing-value {
+            font-size: 3.4rem;
+            font-weight: 800;
+            color: #111827;
+            line-height: 1;
+        }
+        .pricing-cents {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #374151;
+            margin-top: 14px;
+        }
+        .pricing-recurrence {
+            font-size: .82rem;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+        .pricing-economy {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .78rem;
+            font-weight: 600;
+            color: #059669;
+            background: #ecfdf5;
+            border-radius: 50px;
+            padding: 2px 10px;
+            margin-bottom: 4px;
+        }
+
+        /* Features */
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 auto;
+        }
+        .pricing-features li {
+            font-size: .88rem;
+            color: #374151;
+            padding: 7px 0;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+        }
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        /* CTA Buttons */
+        .btn-pricing-primary {
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 13px 20px;
+            font-weight: 700;
+            font-size: .95rem;
+            transition: background .2s, transform .15s;
+        }
+        .btn-pricing-primary:hover {
+            background: #4f46e5;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        .btn-pricing-outline {
+            background: transparent;
+            color: #374151;
+            border: 1.5px solid #d1d5db;
+            border-radius: 10px;
+            padding: 13px 20px;
+            font-weight: 600;
+            font-size: .95rem;
+            transition: border-color .2s, color .2s, transform .15s;
+        }
+        .btn-pricing-outline:hover {
+            border-color: #6366f1;
+            color: #6366f1;
+            transform: translateY(-2px);
+        }
+        .btn-pricing-gold {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 13px 20px;
+            font-weight: 700;
+            font-size: .95rem;
+            transition: opacity .2s, transform .15s;
+        }
+        .btn-pricing-gold:hover {
+            opacity: .9;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* FAQ / Garantia bar */
+        .pricing-guarantee {
+            background: #f8f9fb;
+            border: 1px solid #e8eaf0;
+            border-radius: 14px;
+            padding: 24px 32px;
+        }
+        .pricing-guarantee-icon {
+            width: 44px; height: 44px;
+            background: #eef2ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #6366f1;
+            flex-shrink: 0;
+        }
+
+        /* Reveal animation (mesma da landing) */
+        .reveal-on-scroll { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: none; }
+        .delay-100 { transition-delay: .1s; }
+        .delay-200 { transition-delay: .2s; }
+        .delay-300 { transition-delay: .3s; }
+        .delay-400 { transition-delay: .4s; }
+    </style>
+</head>
+
+<body class="landing-body">
+
+    <!-- Barra de Navegação -->
+    <nav class="navbar navbar-expand-lg landing-navbar sticky-top" id="mainNav">
+        <div class="container py-1">
+            <a class="navbar-brand d-flex align-items-center gap-3 text-decoration-none" href="/">
+                <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}" alt="Logo SGPP" width="42" height="42" class="landing-logo-img">
+                <div class="lh-sm">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-extrabold fs-4 landing-brand-title">SGPP</span>
+                        <span class="landing-brand-divider">|</span>
+                        <span class="landing-brand-tag d-none d-md-inline">Gestão Pedagógica</span>
+                    </div>
+                    <span class="d-none d-sm-block landing-brand-subtitle">
+                        Sistema de Gestão e Planejamento Pedagógico
+                    </span>
+                </div>
+            </a>
+
+            <button class="navbar-toggler border-0 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPrecos" aria-controls="navbarPrecos" aria-expanded="false">
+                <i class="bi bi-list fs-2"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarPrecos">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4">
+                    <li class="nav-item">
+                        <a class="nav-link landing-nav-link" href="/#modulos">Módulos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link landing-nav-link" href="/#fluxo">Fluxo de Trabalho</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link landing-nav-link" href="/#sobre">Sobre</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link landing-nav-link active fw-semibold" href="/precos">Planos</a>
+                    </li>
+                </ul>
+
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-lg-0">
+                    {% if session.get('usuario_id') %}
+                        <a href="/dashboard" class="btn btn-landing-primary px-4 py-2">
+                            <i class="bi bi-grid-1x2 me-1"></i> Ir para o Painel
+                        </a>
+                        <a href="/logout" class="btn btn-landing-outline px-3 py-2">Sair</a>
+                    {% else %}
+                        <a href="/login" class="btn btn-landing-outline px-3 py-2">Entrar</a>
+                        <a href="/cadastro" class="btn btn-landing-primary px-4 py-2">Criar Conta</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO DA PÁGINA DE PREÇOS -->
+    <header class="pricing-hero text-center">
+        <div class="container position-relative">
+            <div class="pricing-eyebrow mb-3">
+                <span class="pricing-eyebrow-dot"></span>
+                <span>Planos e Preços</span>
+            </div>
+            <h1 class="pricing-hero-title mb-3">Escolha o plano ideal para você</h1>
+            <p class="pricing-hero-sub mx-auto mb-0">
+                Acesso completo a todos os módulos do SGPP. Sem taxas ocultas. Cancele quando quiser.
+            </p>
+        </div>
+    </header>
+
+    <!-- CARDS DE PLANOS -->
+    <section class="py-5 bg-light">
+        <div class="container py-4">
+
+            <div class="row g-4 justify-content-center align-items-stretch">
+
+                <!-- Plano Mensal -->
+                <div class="col-sm-6 col-xl-3 reveal-on-scroll delay-100">
+                    <div class="pricing-card h-100">
+                        <div class="pricing-period">Mensal</div>
+                        <div class="pricing-price-wrap">
+                            <span class="pricing-currency">R$</span>
+                            <span class="pricing-value">19</span>
+                            <span class="pricing-cents">,90</span>
+                        </div>
+                        <div class="pricing-recurrence">cobrado por mês</div>
+                        <hr class="my-3">
+                        <ul class="pricing-features mb-4">
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Todos os 4 módulos</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Exportação ilimitada</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Repositório de questões</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Suporte por e-mail</li>
+                            <li><i class="bi bi-dash text-secondary me-2"></i>Cancelamento a qualquer hora</li>
+                        </ul>
+                        <a href="/cadastro" class="btn btn-pricing-outline w-100">Assinar Mensal</a>
+                    </div>
+                </div>
+
+                <!-- Plano Trimestral (POPULAR) -->
+                <div class="col-sm-6 col-xl-3 reveal-on-scroll delay-200">
+                    <div class="pricing-card pricing-card--featured h-100">
+                        <div class="pricing-badge pricing-badge--indigo">⭐ Popular</div>
+                        <div class="pricing-period">Trimestral</div>
+                        <div class="pricing-price-wrap">
+                            <span class="pricing-currency">R$</span>
+                            <span class="pricing-value">39</span>
+                            <span class="pricing-cents">,90</span>
+                        </div>
+                        <div class="pricing-recurrence">cobrado a cada 3 meses</div>
+                        <div class="pricing-economy mb-3">
+                            <i class="bi bi-arrow-down-circle-fill"></i> Economia de ~17% vs. mensal
+                        </div>
+                        <ul class="pricing-features mb-4">
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Todos os 4 módulos</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Exportação ilimitada</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Repositório de questões</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Suporte prioritário</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Cancelamento a qualquer hora</li>
+                        </ul>
+                        <a href="/cadastro" class="btn btn-pricing-primary w-100">Assinar Trimestral</a>
+                    </div>
+                </div>
+
+                <!-- Plano Semestral -->
+                <div class="col-sm-6 col-xl-3 reveal-on-scroll delay-300">
+                    <div class="pricing-card h-100">
+                        <div class="pricing-period">Semestral</div>
+                        <div class="pricing-price-wrap">
+                            <span class="pricing-currency">R$</span>
+                            <span class="pricing-value">69</span>
+                            <span class="pricing-cents">,90</span>
+                        </div>
+                        <div class="pricing-recurrence">cobrado a cada 6 meses</div>
+                        <div class="pricing-economy mb-3">
+                            <i class="bi bi-arrow-down-circle-fill"></i> Economia de ~42% vs. mensal
+                        </div>
+                        <ul class="pricing-features mb-4">
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Todos os 4 módulos</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Exportação ilimitada</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Repositório de questões</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Suporte prioritário</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Cancelamento a qualquer hora</li>
+                        </ul>
+                        <a href="/cadastro" class="btn btn-pricing-outline w-100">Assinar Semestral</a>
+                    </div>
+                </div>
+
+                <!-- Plano Anual (MELHOR VALOR) -->
+                <div class="col-sm-6 col-xl-3 reveal-on-scroll delay-400">
+                    <div class="pricing-card pricing-card--gold h-100">
+                        <div class="pricing-badge pricing-badge--gold">🏆 Melhor Valor</div>
+                        <div class="pricing-period">Anual</div>
+                        <div class="pricing-price-wrap">
+                            <span class="pricing-currency">R$</span>
+                            <span class="pricing-value">129</span>
+                            <span class="pricing-cents">,90</span>
+                        </div>
+                        <div class="pricing-recurrence">cobrado por ano</div>
+                        <div class="pricing-economy mb-3">
+                            <i class="bi bi-arrow-down-circle-fill"></i> Economia de ~31% vs. mensal
+                        </div>
+                        <ul class="pricing-features mb-4">
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Todos os 4 módulos</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Exportação ilimitada</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Repositório de questões</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Suporte VIP 24h</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i>Cancelamento a qualquer hora</li>
+                        </ul>
+                        <a href="/cadastro" class="btn btn-pricing-gold w-100">Assinar Anual</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Barra de garantias -->
+            <div class="row justify-content-center mt-5 reveal-on-scroll">
+                <div class="col-lg-10">
+                    <div class="pricing-guarantee">
+                        <div class="row g-4 text-center text-md-start">
+                            <div class="col-md-4 d-flex align-items-center gap-3 justify-content-center justify-content-md-start">
+                                <div class="pricing-guarantee-icon">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark small">Pagamento Seguro</div>
+                                    <div class="text-muted" style="font-size:.8rem;">Dados protegidos com criptografia</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-center gap-3 justify-content-center justify-content-md-start">
+                                <div class="pricing-guarantee-icon">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark small">Cancele a Qualquer Hora</div>
+                                    <div class="text-muted" style="font-size:.8rem;">Sem multa ou burocracia</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-center gap-3 justify-content-center justify-content-md-start">
+                                <div class="pricing-guarantee-icon">
+                                    <i class="bi bi-headset"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark small">Suporte em Português</div>
+                                    <div class="text-muted" style="font-size:.8rem;">Atendimento humanizado e ágil</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="py-5 landing-section-white border-top">
+        <div class="container py-3 text-center reveal-on-scroll">
+            <h3 class="fw-bold text-dark mb-2">Ainda tem dúvidas?</h3>
+            <p class="text-muted mb-4">Comece agora mesmo e explore todos os recursos do SGPP sem compromisso.</p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <a href="/cadastro" class="btn btn-landing-primary btn-lg px-5 py-3">
+                    <i class="bi bi-person-plus me-2"></i> Criar Conta Gratuita
+                </a>
+                <a href="/" class="btn btn-landing-outline btn-lg px-5 py-3">
+                    <i class="bi bi-arrow-left me-2"></i> Voltar ao Início
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- RODAPÉ -->
+    <footer class="footer-modern bg-white border-top py-4">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}" alt="SGPP" width="26" height="26">
+                <span class="text-muted small">
+                    <strong>SGPP</strong> &mdash; Sistema de Gestão e Planejamento Pedagógico &copy; 2026. Todos os direitos reservados.
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small"><i class="bi bi-shield-check me-1"></i> Ambiente Autenticado</span>
+                <span class="text-muted small">&bull;</span>
+                <span class="text-muted small"><i class="bi bi-file-earmark-text me-1"></i> Gestão Documental</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const revealElements = document.querySelectorAll('.reveal-on-scroll');
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+                revealElements.forEach(el => observer.observe(el));
+            } else {
+                revealElements.forEach(el => el.classList.add('is-visible'));
+            }
+
+            // Sombra na navbar ao rolar
+            const nav = document.getElementById('mainNav');
+            window.addEventListener('scroll', function () {
+                nav.classList.toggle('scrolled', window.scrollY > 16);
+            }, { passive: true });
+        });
+    </script>
+
+</body>
+</html>
