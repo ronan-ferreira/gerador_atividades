@@ -1,110 +1,134 @@
-# 🎓 Gerador de Atividades e Planejamento Docente — SENAI
+# 🎓 SGPP — Sistema de Gestão e Planejamento Pedagógico
 
-Sistema web para professores do SENAI gerarem **atividades avaliativas**, **planos de aula** e **planejamentos docentes** com auxílio de Inteligência Artificial (Ollama + LLaMA 3.1), com suporte a múltiplos usuários simultâneos em rede local.
+O **SGPP** (Sistema de Gestão e Planejamento Pedagógico) é uma plataforma web completa e moderna desenvolvida para docentes e coordenadores pedagógicos (com foco nas metodologias SENAI / redes de ensino técnico e profissionalizante). O sistema automatiza a criação de **atividades avaliativas**, **planos de aula**, **planejamentos docentes com Taxonomia de Bloom** e gerencia um **repositório compartilhado de questões**, utilizando Inteligência Artificial (Ollama / LLaMA 3.1, Gemini, OpenAI) com suporte multiusuário em rede local ou nuvem.
 
 ---
 
-## ✨ Funcionalidades
+## ✨ Funcionalidades Principais
 
 | Módulo | Descrição |
 |--------|-----------|
-| 🧠 **Gerador de Atividades** | Gera questões objetivas, discursivas ou mistas com base no conteúdo informado |
-| 📋 **Planos de Aula** | Gera planos de aula a partir de PDF (Plano de Curso) ou Matriz de Referência Excel (SAEP) |
-| 📊 **Planejamento Docente** | Gera a planilha Excel oficial com a Taxonomia de Bloom aplicada automaticamente |
-| 🗂️ **Histórico** | Todas as atividades, planos e planejamentos ficam salvos por professor |
-| 📥 **Download** | Exportação em Word (.docx), PDF e Excel |
-| 👤 **Perfis** | Perfil `professor` (vê só o próprio) e `admin` (vê tudo) |
+| 🌐 **Landing Page & Painel** | Apresentação institucional, estatísticas em tempo real e acesso rápido aos módulos |
+| 🗄️ **Repositório de Questões** | Banco de questões autorais (professor) e de IA, com busca, filtros (origem, tipo, Bloom) e visualização de folha com cabeçalho oficial |
+| 🧠 **Gerador de Atividades Híbrido** | Montagem de avaliações a partir do repositório interno e/ou complementação inteligente sob demanda via IA |
+| 📋 **Planos de Aula Estruturados** | Geração e desdobramento de encontros a partir de PDFs (Plano de Curso) ou Matrizes SAEP / Excel |
+| 📊 **Planejamento Docente (Bloom)** | Geração automática da planilha Excel oficial SENAI e Word com capacidades e níveis progressivos da Taxonomia de Bloom |
+| 👁️ **Visualização & Impressão** | Pré-visualização de atividades no padrão oficial com cabeçalho de identificação e modo de impressão limpo (`@media print`) |
+| 📥 **Exportação Oficial** | Download de documentos formatados em Word (.docx), PDF e planilhas Excel (.xlsx) |
+| 🔐 **Segurança & Perfis** | Criptografia Bcrypt (salt=12), redefinição de senha segura via token/e-mail e níveis de acesso (`professor` e `admin`) |
 
 ---
 
-## 🏗️ Arquitetura
+## 🏗️ Estrutura do Projeto
 
 ```
 gerador_atividades/
 │
-├── app.py                        # Rotas Flask (toda a aplicação web)
-├── iniciar_servidor.py           # Script de inicialização Waitress (produção)
-├── .env                          # Configurações locais (banco, IA, servidor)
-├── .env.example                  # Template de configuração para novo computador
-├── requirements.txt              # Dependências Python
-│
-├── ia/
-│   ├── gerador.py                # Geração de atividades via Ollama
-│   ├── plano_aula.py             # Geração de planos de aula via Ollama
-│   └── planejamento_bloom.py     # Planejamento Docente com Taxonomia de Bloom
+├── app.py                             # Rotas Flask, controle de sessão e endpoints
+├── iniciar_servidor.py                # Inicialização de produção com Waitress (WSGI)
+├── iniciar.bat / iniciar.sh           # Scripts de inicialização rápida
+├── .env                               # Variáveis de ambiente (ignorado no git)
+├── .env.example                       # Modelo de configuração para implantação
+├── requirements.txt                   # Dependências do ecossistema Python
 │
 ├── database/
-│   ├── conexao.py                # Pool de conexões PostgreSQL (thread-safe)
-│   └── script_banco.sql          # Script de criação das tabelas
+│   ├── conexao.py                     # Pool de conexões PostgreSQL thread-safe
+│   ├── script_banco.sql               # Esquema das tabelas principais
+│   └── criar_banco_completo.sql       # Script completo para instalação inicial
+│
+├── ia/
+│   ├── gerador.py                     # Motor de geração de avaliações via IA
+│   ├── plano_aula.py                  # Geração de planos de aula diários
+│   └── planejamento_bloom.py          # Lógica da Taxonomia de Bloom progressiva
 │
 ├── utils/
-│   ├── docx_generator.py         # Geração de Word para planos
-│   ├── docx_atividade_generator.py
-│   ├── pdf_generator.py          # Conversão Word → PDF
-│   ├── pdf_atividade_generator.py
-│   ├── excel_planejamento_generator.py  # Geração da planilha oficial
-│   ├── excel_reader.py           # Leitura de Matriz SAEP
-│   ├── matriz_saep_reader.py
-│   ├── planejamento_docente_reader.py
-│   ├── pdf_plano_reader.py       # Extração de texto de PDF
-│   └── texto_utils.py            # Limpeza e formatação de textos
+│   ├── repositorio_service.py         # CRUD, busca e parsing de itens do repositório
+│   ├── docx_atividade_generator.py    # Geração de avaliações em Word no layout institucional
+│   ├── docx_planejamento_generator.py # Geração de planejamento em Word
+│   ├── pdf_atividade_generator.py     # Geração de PDF via ReportLab e docx2pdf
+│   ├── excel_planejamento_generator.py# Geração da planilha Excel de Planejamento Docente
+│   ├── security.py                    # Hash e verificação de senhas com Bcrypt
+│   └── email_service.py               # Envio de e-mails de recuperação de senha
 │
-├── templates/                    # HTMLs Jinja2
-├── static/                       # CSS e imagens
-├── uploads/                      # Arquivos enviados pelos professores
-└── outputs/                      # Arquivos gerados (Excel, Word, PDF)
+├── templates/                         # Templates HTML com Bootstrap 5 e ícones
+│   ├── base.html                      # Layout base e navbar do SGPP
+│   ├── landing.html                   # Landing page institucional
+│   ├── dashboard.html                 # Painel com métricas e atalhos
+│   ├── repositorio.html               # Banco de questões com filtros e ações
+│   ├── visualizar_atividade_repositorio.html # Visualização de folha com cabeçalho oficial
+│   ├── atividades.html                # Lista e histórico de atividades geradas
+│   ├── index.html                     # Formulário de criação de atividades (híbrido/IA)
+│   ├── planejamento_docente.html      # Formulário e geração do planejamento docente
+│   ├── planos_curso.html              # Planos de aula por curso e unidade curricular
+│   └── login.html / cadastro.html     # Autenticação e gestão de usuários
+│
+├── static/                            # Arquivos estáticos (CSS customizado, imagens e logos)
+├── uploads/                           # Upload temporário de matrizes SAEP e PDFs
+└── outputs/                           # Documentos finais gerados (Word, PDF, Excel)
 ```
 
 ---
 
-## ⚙️ Requisitos
+## ⚙️ Requisitos do Sistema
 
-- **Python** 3.11+
-- **PostgreSQL** 14+
-- **Ollama** com modelo `llama3.1:8b` baixado
-- **Windows** (dependência `pywin32` para conversão PDF)
+- **Python**: versão 3.10 ou superior (recomendado 3.11+)
+- **PostgreSQL**: versão 14+
+- **Ollama** com o modelo `llama3.1:8b` (para processamento de IA local)
+- **Sistema Operacional**: Windows 10/11 ou Linux Server
 
 ---
 
-## 🚀 Instalação
+## 🚀 Instalação e Configuração
 
-### 1. Clonar o projeto
+### 1. Clonar o Repositório
 
 ```bash
-git clone <repositorio>
+git clone https://github.com/ronan-ferreira/gerador_atividades.git
 cd gerador_atividades
 ```
 
-### 2. Criar ambiente virtual e instalar dependências
+### 2. Criar e Ativar o Ambiente Virtual
 
+No Windows (PowerShell):
 ```powershell
 python -m venv venv
-venv\Scripts\pip install -r requirements.txt
+.\venv\Scripts\Activate.ps1
 ```
 
-### 3. Configurar o banco de dados
+No Linux/macOS:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-Abra o **pgAdmin** ou o `psql` e execute:
+### 3. Instalar as Dependências
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configurar o Banco de Dados (PostgreSQL)
+
+Crie o banco de dados via pgAdmin ou terminal `psql`:
 
 ```sql
 CREATE DATABASE gerador_atividades;
 ```
 
-Depois execute o script de criação das tabelas:
-
+Execute o script de estruturação das tabelas:
 ```powershell
 psql -U postgres -d gerador_atividades -f database/script_banco.sql
 ```
 
-### 4. Configurar o arquivo `.env`
+### 5. Configurar as Variáveis de Ambiente
 
-Copie o exemplo e edite com suas configurações:
+Copie o arquivo de exemplo `.env.example` para `.env`:
 
 ```powershell
 copy .env.example .env
 ```
 
-Edite o `.env`:
+Edite o arquivo `.env` com os dados do seu ambiente:
 
 ```env
 # Banco de Dados
@@ -112,171 +136,61 @@ DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=gerador_atividades
 DB_USER=postgres
-DB_PASSWORD=SUA_SENHA_AQUI
+DB_PASSWORD=sua_senha_aqui
 
-# Flask — gere uma chave segura:
-# python -c "import secrets; print(secrets.token_hex(32))"
-FLASK_SECRET_KEY=cole_a_chave_gerada_aqui
+# Chave secreta da sessão Flask
+FLASK_SECRET_KEY=sua_chave_secreta_aqui
 
-# Ollama
+# Provedor de IA (Ollama Local)
 OLLAMA_URL=http://localhost:11434
 
-# Servidor
+# Servidor Web
 SERVER_HOST=0.0.0.0
 SERVER_PORT=5000
 SERVER_THREADS=4
 ```
 
-### 5. Baixar o modelo de IA
+### 6. Modelo de IA Local (Ollama)
+
+Certifique-se de que o Ollama está em execução e baixe o modelo LLaMA 3.1:
 
 ```powershell
 ollama pull llama3.1:8b
 ```
 
-### 6. Iniciar o servidor
+### 7. Executar a Aplicação
 
+Para iniciar o servidor corporativo com **Waitress**:
 ```powershell
-venv\Scripts\python iniciar_servidor.py
+python iniciar_servidor.py
 ```
+*(ou execute o script `iniciar.bat` no Windows)*
 
-Acesse: **http://localhost:5000**
+Acesse no navegador: **http://localhost:5000**
 
 ---
 
-## 🌐 Uso em Rede Local (Múltiplos Professores)
+## 🌐 Acesso em Rede Local (Multi-Docente)
 
-O sistema foi projetado para ser acessado por vários professores simultaneamente via rede local.
+O SGPP foi arquitetado para suportar múltiplos professores conectados simultaneamente na rede da unidade escolar:
 
-### Iniciar o servidor para a rede
+1. Inicie o servidor no computador principal:
+   ```powershell
+   python iniciar_servidor.py
+   ```
+2. Obtenha o endereço IP local do computador servidor através do comando `ipconfig` (ex: `192.168.1.100`).
+3. Os demais professores podem acessar pelo navegador em seus computadores ou notebooks usando:
+   ```
+   http://192.168.1.100:5000
+   ```
 
-```powershell
-venv\Scripts\python iniciar_servidor.py
-```
-
-O servidor sobe em `0.0.0.0:5000` — visível para toda a rede local.
-
-Para descobrir o IP do servidor:
-
-```powershell
-ipconfig
-# Procure por "Endereço IPv4" — ex: 192.168.1.100
-```
-
-Professores acessam pelo navegador:
-
-```
-http://192.168.1.100:5000
-```
-
-### Arquitetura multi-usuário
-
-```
-👩‍🏫 Professor 1 ──┐
-👨‍🏫 Professor 2 ──┼──► Waitress (4 threads) ──► Flask App ──► PostgreSQL (pool 20)
-👩‍🏫 Professor 3 ──┘                                       └──► Ollama (llama3.1:8b)
-```
-
-- **Waitress**: servidor WSGI profissional para Windows — gerencia conexões em paralelo
-- **Pool PostgreSQL**: até 20 conexões simultâneas thread-safe
-- **Cache thread-safe**: resultados idênticos são reutilizados automaticamente com `threading.Lock()`
-- **Sessões isoladas**: cada professor vê apenas seus próprios dados
+- **Waitress WSGI**: processamento concorrente em múltiplas threads.
+- **Pool Thread-Safe**: até 20 conexões simultâneas com o PostgreSQL.
+- **Isolamento de Dados**: cada professor visualiza e edita apenas seus próprios itens cadastrados.
 
 ---
 
-## 🎮 Novo Computador com GPU
+## 📄 Licença e Uso
 
-Para processar várias requisições de IA ao mesmo tempo, configure as variáveis de ambiente do Ollama no Windows:
-
-**Painel de Controle → Sistema → Variáveis de Ambiente do Sistema:**
-
-| Variável | Valor | Descrição |
-|----------|-------|-----------|
-| `OLLAMA_NUM_PARALLEL` | `4` | Processa até 4 requisições de IA simultâneas na GPU |
-| `OLLAMA_MAX_LOADED_MODELS` | `1` | Mantém apenas 1 modelo carregado na VRAM |
-
-Reinicie o serviço do Ollama após configurar.
-
----
-
-## 📊 Módulos em Detalhe
-
-### Gerador de Atividades
-
-- Entrada: curso, disciplina, conteúdo, dificuldade, tipo (objetiva/discursiva/misto), quantidade
-- Saída: atividade avaliativa em texto, exportável em Word ou PDF
-- Modelo: `llama3.1:8b` · `num_predict: 900` · `timeout: 120s`
-
-### Planos de Aula
-
-- Entrada: PDF do Plano de Curso **ou** Excel da Matriz SAEP (SENAI) **ou** Excel do Planejamento Docente
-- Saída: planos por dia/encontro, exportáveis individualmente ou em conjunto
-- Geração em paralelo com `ThreadPoolExecutor`
-- Fallback automático estruturado se a IA falhar ou demorar
-
-### Planejamento Docente (Taxonomia de Bloom)
-
-- Entrada: nome do curso, UC, carga horária, datas, PDF do Plano de Curso (opcional), Matriz SAEP (opcional)
-- Saída: planilha Excel oficial SENAI preenchida com:
-  - Capacidades e conhecimentos por encontro
-  - Estratégias de ensino progressivas (Bloom: Lembrar → Entender → Aplicar → Analisar → Avaliar)
-  - Critérios e instrumentos de avaliação
-  - Datas calculadas automaticamente em dias úteis
-- IA com `timeout: 20s` — se demorar, gera algoritmicamente em menos de 1 segundo
-
----
-
-## 🗄️ Banco de Dados
-
-```
-usuarios           — professores e administradores
-atividades         — atividades geradas, vinculadas ao professor
-cursos_plano       — cursos cadastrados para planos de aula
-planos_aula        — planos de aula por dia/encontro
-planejamentos_docente — planejamentos gerados com Bloom
-```
-
----
-
-## 🔐 Segurança
-
-- **Hash criptográfico de senhas**: Implementado com `bcrypt` (salt rounds=12)
-- **Migração transparente**: Usuários cadastrados antes da migração têm suas senhas convertidas automaticamente para bcrypt no próximo login
-- Autenticação protegida por sessão Flask (`session_id`)
-- Cada professor acessa apenas seus próprios dados (isolamento por `usuario_id`)
-- `secret_key` configurável via `.env`
-- Credenciais do banco e chaves de IA via `.env` (não commitadas no código)
-
----
-
-## 🛠️ Desenvolvimento
-
-Para rodar em modo desenvolvimento (sem Waitress):
-
-```powershell
-venv\Scripts\python app.py
-```
-
-> Não usar `debug=True` em produção ou em rede compartilhada.
-
----
-
-## 📦 Principais Dependências
-
-| Pacote | Uso |
-|--------|-----|
-| `Flask` | Framework web |
-| `waitress` | Servidor WSGI para produção no Windows |
-| `bcrypt` | Criptografia segura de senhas |
-| `psycopg2-binary` | Conexão com PostgreSQL |
-| `python-dotenv` | Leitura do `.env` |
-| `requests` | Chamadas de IA (Ollama / Gemini / OpenAI) |
-| `openpyxl` | Geração do Excel do Planejamento Docente |
-| `python-docx` | Geração de arquivos Word |
-| `docx2pdf` | Conversão Word → PDF |
-| `PyPDF2` / `pdfplumber` | Leitura de PDFs |
-
----
-
-## 📝 Licença
-
-Uso interno SENAI. Todos os direitos reservados.
+Sistema desenvolvido para apoio pedagógico e produtividade docente no âmbito da Educação Profissional e Tecnológica (SENAI).
+Todos os direitos reservados.
