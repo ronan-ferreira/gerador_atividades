@@ -19,6 +19,8 @@
     
     <!-- CSS Customizado -->
     <link href="{{ url_for('static', filename='css/style.css') }}?v=4" rel="stylesheet">
+    <!-- CSS do Tutorial Interativo -->
+    <link href="{{ url_for('static', filename='css/tutorial.css') }}?v=1" rel="stylesheet">
 </head>
 
 <body>
@@ -109,6 +111,12 @@
             </ul>
 
             <div class="d-flex flex-wrap align-items-center justify-content-between justify-content-lg-end gap-2 pt-3 pt-lg-0 mt-2 mt-lg-0 border-top border-secondary border-opacity-25 border-lg-0">
+                <!-- Botão de Acesso ao Tutorial / Como Usar -->
+                <button type="button" class="btn btn-tutorial-trigger rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-2 small shadow-sm" onclick="abrirTutorial()" title="Clique para ver o passo a passo ilustrado de como usar o SGPP">
+                    <i class="bi bi-lightbulb-fill text-warning"></i>
+                    <span>Como Usar (Tutorial)</span>
+                </button>
+
                 <div class="dropdown">
                     <button class="btn user-profile-badge border-0 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle fs-5 text-info"></i>
@@ -117,8 +125,13 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0)" onclick="abrirTutorial()">
+                                <i class="bi bi-mortarboard text-primary"></i> Rever Tutorial do Sistema
+                            </a>
+                        </li>
+                        <li>
                             <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="/alterar_senha">
-                                <i class="bi bi-key text-primary"></i> Alterar Minha Senha
+                                <i class="bi bi-key text-secondary"></i> Alterar Minha Senha
                             </a>
                         </li>
                         <li><hr class="dropdown-divider my-1"></li>
@@ -278,6 +291,12 @@ window.addEventListener('pageshow', function() {
     esconderLoading();
 });
 </script>
+
+<!-- Modal do Tutorial Interativo SGPP -->
+{% include 'tutorial_modal.html' %}
+
+<!-- Script do Tutorial Interativo SGPP -->
+<script src="{{ url_for('static', filename='js/tutorial.js') }}?v=1"></script>
 
 </body>
 </html>

@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     nome        VARCHAR(100) NOT NULL,
     email       VARCHAR(150) NOT NULL UNIQUE,
     senha       VARCHAR(255) NOT NULL,
-    perfil      VARCHAR(20) NOT NULL DEFAULT 'professor'
+    perfil      VARCHAR(20) NOT NULL DEFAULT 'professor',
+    tutorial_visto BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 COMMENT ON TABLE usuarios IS 'Usuários do sistema (professores)';

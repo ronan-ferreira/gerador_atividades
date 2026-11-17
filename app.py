@@ -155,14 +155,25 @@ def cadastro():
                     nome,
                     email,
                     senha,
-                    perfil
+                    perfil,
+                    tutorial_visto
                 )
-                VALUES (%s,%s,%s,%s)
+                VALUES (%s,%s,%s,%s,%s)
+                RETURNING id
                 """,
-                (nome, email, senha_hash, "professor"),
+                (nome, email, senha_hash, "professor", False),
             )
 
+            novo_usuario_id = cursor.fetchone()[0]
             conn.commit()
+
+            # Autentica e inicia a sessão automaticamente para exibir o tutorial no primeiro acesso
+            session["usuario_id"] = novo_usuario_id
+            session["nome"] = nome
+            session["perfil"] = "professor"
+            session["mostrar_tutorial"] = True
+
+            return redirect("/dashboard?tutorial=1")
         except Exception as e:
             try:
                 conn.rollback()
@@ -177,8 +188,6 @@ def cadastro():
             )
         finally:
             release_cursor(conn, cursor)
-
-        return redirect("/login")
 
     return render_template("cadastro.html")
 
@@ -195,7 +204,7 @@ def login():
         try:
             cursor.execute(
                 """
-                SELECT id, nome, email, perfil, senha
+                SELECT id, nome, email, perfil, senha, COALESCE(tutorial_visto, FALSE)
                 FROM usuarios
                 WHERE email=%s
                 """,
@@ -213,6 +222,11 @@ def login():
             session["usuario_id"] = usuario[0]
             session["nome"] = usuario[1]
             session["perfil"] = "professor"
+
+            # Se for o primeiro acesso ou tutorial ainda não foi visto
+            if not usuario[5]:
+                session["mostrar_tutorial"] = True
+                return redirect("/dashboard?tutorial=1")
 
             return redirect("/dashboard")
 
@@ -1307,6 +1321,11 @@ def dashboard():
     try:
         usuario_id = session["usuario_id"]
 
+        # Checa status do tutorial
+        cursor.execute("SELECT COALESCE(tutorial_visto, FALSE) FROM usuarios WHERE id = %s", (usuario_id,))
+        res_tutorial = cursor.fetchone()
+        tutorial_ja_visto = res_tutorial[0] if res_tutorial else False
+
         cursor.execute(
             """
             SELECT
@@ -1336,14 +1355,67 @@ def dashboard():
     finally:
         release_cursor(conn, cursor)
 
+    # Determina se deve disparar o tutorial automaticamente
+    abrir_tutorial = False
+    param_tutorial = request.args.get("tutorial")
+    if param_tutorial in ("1", "true", "True") or session.pop("mostrar_tutorial", False) or not tutorial_ja_visto:
+        abrir_tutorial = True
+
     return render_template(
         "dashboard.html",
         cursos=cursos,
         total_atividades=total_atividades,
         total_planejamentos=total_planejamentos,
         total_planos=total_planos,
-        total_cursos_plano=total_cursos_plano
+        total_cursos_plano=total_cursos_plano,
+        abrir_tutorial=abrir_tutorial,
+        tutorial_ja_visto=tutorial_ja_visto
     )
+
+
+# =========================
+# ROTAS DO TUTORIAL
+# =========================
+@app.route("/api/concluir_tutorial", methods=["POST"])
+def concluir_tutorial():
+    if "usuario_id" not in session:
+        return jsonify({"sucesso": False, "erro": "Usuário não autenticado."}), 401
+
+    conn, cursor = get_cursor()
+    try:
+        cursor.execute(
+            "UPDATE usuarios SET tutorial_visto = TRUE WHERE id = %s",
+            (session["usuario_id"],),
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"[TUTORIAL] Erro ao concluir tutorial: {e}")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+    finally:
+        release_cursor(conn, cursor)
+
+    session.pop("mostrar_tutorial", None)
+    return jsonify({"sucesso": True})
+
+
+@app.route("/api/resetar_tutorial", methods=["POST"])
+def resetar_tutorial():
+    if "usuario_id" not in session:
+        return jsonify({"sucesso": False, "erro": "Usuário não autenticado."}), 401
+
+    conn, cursor = get_cursor()
+    try:
+        cursor.execute(
+            "UPDATE usuarios SET tutorial_visto = FALSE WHERE id = %s",
+            (session["usuario_id"],),
+        )
+        conn.commit()
+    except Exception as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+    finally:
+        release_cursor(conn, cursor)
+
+    return jsonify({"sucesso": True})
 
 # =========================
 # PLANOS DE AULA

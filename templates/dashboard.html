@@ -4,6 +4,12 @@
 
 {% block conteudo %}
 
+{% if abrir_tutorial %}
+<script>
+    window.SGPP_AUTO_TUTORIAL = true;
+</script>
+{% endif %}
+
 <div class="py-2">
 
     <!-- Cabeçalho do Painel -->
@@ -17,13 +23,37 @@
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm shadow-sm d-flex align-items-center gap-1" onclick="abrirTutorial()">
+                <i class="bi bi-lightbulb-fill text-warning"></i> Tutorial Passo a Passo
+            </button>
             <a href="/planejamento_docente" class="btn btn-primary btn-sm shadow-sm">
                 <i class="bi bi-plus-lg"></i> Novo Planejamento
             </a>
-            <a href="/nova_atividade" class="btn btn-outline-primary btn-sm shadow-sm">
+            <a href="/nova_atividade" class="btn btn-outline-secondary btn-sm shadow-sm">
                 <i class="bi bi-pencil-square"></i> Nova Atividade
             </a>
         </div>
+    </div>
+
+    <!-- Banner de Boas-Vindas e Acesso Rápido ao Tutorial -->
+    <div class="tutorial-welcome-banner rounded-4 p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 shadow-sm">
+        <div class="d-flex align-items-center gap-3">
+            <div class="banner-tutorial-icon d-flex align-items-center justify-content-center text-primary fs-3">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1 text-dark">
+                    Olá, Professor(a) {{ session.get('nome', '') }}! Seja bem-vindo(a) ao SGPP.
+                </h5>
+                <p class="text-secondary mb-0 small">
+                    Criamos este sistema para tirar o peso da burocracia do seu dia a dia. Quer ver como funciona de forma simples e ilustrada?
+                </p>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow-sm text-nowrap d-flex align-items-center gap-2" onclick="abrirTutorial()">
+            <i class="bi bi-play-circle-fill fs-5"></i>
+            <span>Ver Tutorial Passo a Passo</span>
+        </button>
     </div>
 
     <!-- 3 Módulos Principais (KPI Cards) -->

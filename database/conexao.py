@@ -89,6 +89,8 @@ def _executar_migracoes_iniciais():
 
             CREATE INDEX IF NOT EXISTS idx_codigos_recuperacao_user ON codigos_recuperacao(usuario_id, usado, expira_em);
 
+            ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS tutorial_visto BOOLEAN DEFAULT FALSE;
+
             UPDATE usuarios SET perfil = 'professor' WHERE perfil != 'professor';
         """)
         cur.close()

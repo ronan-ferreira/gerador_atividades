@@ -1,0 +1,546 @@
+<!-- ============================================================
+     MODAL DO TUTORIAL PASSO A PASSO SGPP
+     Planejado para máxima clareza e acessibilidade para professores
+     ============================================================ -->
+<div id="sgppTutorialOverlay" class="sgpp-tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorialModalTitle">
+    <div class="sgpp-tutorial-dialog">
+
+        <!-- CABEÇALHO DO TUTORIAL -->
+        <div class="sgpp-tutorial-header">
+            <div class="sgpp-tutorial-header-top">
+                <div class="sgpp-tutorial-brand">
+                    <img src="{{ url_for('static', filename='img/logo_sgp_icon.svg') }}" alt="Logo SGPP" width="32" height="32">
+                    <div>
+                        <span class="sgpp-tutorial-brand-badge">
+                            <i class="bi bi-mortarboard-fill"></i> Guia do Professor
+                        </span>
+                        <h3 id="tutorialModalTitle" class="sgpp-tutorial-title mt-1">Como Usar o SGPP Passo a Passo</h3>
+                    </div>
+                </div>
+
+                <button type="button" class="sgpp-tutorial-close-btn" onclick="fecharTutorial()" title="Fechar Tutorial (Esc)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- STEPPER DE PROGRESSO -->
+            <div class="sgpp-tutorial-stepper">
+                <div class="sgpp-tutorial-progress-line" id="tutorialProgressLine" style="width: 0%;"></div>
+
+                <button type="button" class="sgpp-tutorial-step-item active" onclick="irParaPasso(1)" title="Passo 1: Boas-vindas">
+                    <div class="sgpp-tutorial-step-circle">1</div>
+                    <span class="sgpp-tutorial-step-label">Boas-vindas</span>
+                </button>
+
+                <button type="button" class="sgpp-tutorial-step-item" onclick="irParaPasso(2)" title="Passo 2: Painel">
+                    <div class="sgpp-tutorial-step-circle">2</div>
+                    <span class="sgpp-tutorial-step-label">Painel Inicial</span>
+                </button>
+
+                <button type="button" class="sgpp-tutorial-step-item" onclick="irParaPasso(3)" title="Passo 3: Planejamento">
+                    <div class="sgpp-tutorial-step-circle">3</div>
+                    <span class="sgpp-tutorial-step-label">Planejamento</span>
+                </button>
+
+                <button type="button" class="sgpp-tutorial-step-item" onclick="irParaPasso(4)" title="Passo 4: Planos de Aula">
+                    <div class="sgpp-tutorial-step-circle">4</div>
+                    <span class="sgpp-tutorial-step-label">Planos de Aula</span>
+                </button>
+
+                <button type="button" class="sgpp-tutorial-step-item" onclick="irParaPasso(5)" title="Passo 5: Provas e Atividades">
+                    <div class="sgpp-tutorial-step-circle">5</div>
+                    <span class="sgpp-tutorial-step-label">Atividades/Provas</span>
+                </button>
+
+                <button type="button" class="sgpp-tutorial-step-item" onclick="irParaPasso(6)" title="Passo 6: Conclusão">
+                    <div class="sgpp-tutorial-step-circle">6</div>
+                    <span class="sgpp-tutorial-step-label">Pronto!</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- CORPO DO TUTORIAL COM OS PASSOS -->
+        <div class="sgpp-tutorial-body" id="tutorialBodyContainer">
+
+            <!-- PASSO 1: BOAS-VINDAS -->
+            <div class="sgpp-tutorial-step-content active" data-step="1">
+                <div class="sgpp-tutorial-grid">
+                    <div>
+                        <span class="sgpp-tutorial-badge-step">
+                            <i class="bi bi-stars text-primary"></i> Etapa 1 de 6 &bull; Apresentação
+                        </span>
+                        <h2 class="sgpp-tutorial-heading">Olá, Professor(a)! Seja muito bem-vindo(a).</h2>
+                        <p class="sgpp-tutorial-subheading">
+                            Criamos o <strong>SGPP</strong> com um único objetivo: <strong>eliminar a burocracia de documentos e poupar o seu tempo</strong>, para que você possa focar no que realmente ama &mdash; dar boas aulas.
+                        </p>
+
+                        <ul class="sgpp-tutorial-points">
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Trabalho de horas feito em minutos:</strong> Chega de passar noites e finais de semana formatando arquivos e planilhas complexas.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Seus documentos no padrão oficial:</strong> Arquivos gerados diretamente em Excel (.xlsx) e Word (.docx) prontos para impressão ou envio.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-hand-thumbs-up"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Você tem o controle total:</strong> A Inteligência Artificial monta o rascunho completo, mas você pode editar, ajustar e aprovar cada detalhe.
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="sgpp-tutorial-tip-box">
+                            <i class="bi bi-heart-pulse-fill"></i>
+                            <div>
+                                <strong>Fique totalmente tranquilo:</strong> Você <em>não vai quebrar o computador nem perder dados</em>! O sistema foi feito para ser simples e seguro.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ILUSTRAÇÃO VISUAL DO PASSO 1 -->
+                    <div>
+                        <div class="sgpp-tutorial-visual-card">
+                            <div class="sgpp-mockup-welcome">
+                                <div class="sgpp-mockup-avatar-circle">
+                                    <i class="bi bi-person-workspace"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-1">Seu Assistente Pedagógico</h5>
+                                <p class="text-muted small mb-2">Tudo o que você precisa para o seu semestre em um só lugar.</p>
+                                <div class="sgpp-mockup-pill-group">
+                                    <span class="sgpp-mockup-pill"><i class="bi bi-check2-circle text-success"></i> Cronogramas</span>
+                                    <span class="sgpp-mockup-pill"><i class="bi bi-check2-circle text-success"></i> Planos de Aula</span>
+                                    <span class="sgpp-mockup-pill"><i class="bi bi-check2-circle text-success"></i> Provas com Gabarito</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASSO 2: PAINEL PRINCIPAL (DASHBOARD) -->
+            <div class="sgpp-tutorial-step-content" data-step="2">
+                <div class="sgpp-tutorial-grid">
+                    <div>
+                        <span class="sgpp-tutorial-badge-step">
+                            <i class="bi bi-speedometer2 text-primary"></i> Etapa 2 de 6 &bull; Painel de Controle
+                        </span>
+                        <h2 class="sgpp-tutorial-heading">Sua Tela Inicial: Apenas 3 Módulos</h2>
+                        <p class="sgpp-tutorial-subheading">
+                            Ao entrar no sistema, você verá sua tela inicial (o <strong>Dashboard</strong>). Ela reúne tudo o que você precisa em 3 grandes botões coloridos:
+                        </p>
+
+                        <ul class="sgpp-tutorial-points">
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon" style="background: #dcfce7; color: #15803d;">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>1. Planejamento Docente (Verde/Azul):</strong> O cronograma completo do curso para o semestre, gerando a planilha Excel oficial da instituição.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon" style="background: #e0f2fe; color: #0369a1;">
+                                    <i class="bi bi-journal-bookmark-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>2. Planos de Aula (Azul Claro):</strong> O roteiro detalhado do que ensinar em cada dia de aula (Aula 1, Aula 2, etc.), com metodologia e objetivos.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon" style="background: #fef3c7; color: #b45309;">
+                                    <i class="bi bi-check2-square"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>3. Atividades e Provas (Laranja):</strong> Avaliações com questões de múltipla escolha ou discursivas e folha de respostas pronta para corrigir.
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="sgpp-tutorial-tip-box" style="background: #f0f9ff; border-color: #bae6fd; border-left-color: #0284c7; color: #0369a1;">
+                            <i class="bi bi-info-circle-fill" style="color: #0284c7;"></i>
+                            <div>
+                                <strong>Como voltar ao início:</strong> Se estiver em qualquer tela e quiser voltar para esta página inicial, basta clicar no logotipo <strong>SGPP</strong> no canto superior esquerdo da tela.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ILUSTRAÇÃO VISUAL DO PASSO 2 -->
+                    <div>
+                        <div class="sgpp-tutorial-visual-card">
+                            <div class="sgpp-mockup-dash-cards">
+                                <div class="sgpp-mockup-mini-card active-pulse">
+                                    <div class="sgpp-mockup-mini-info">
+                                        <div class="sgpp-mockup-mini-icon" style="background: #0f766e;">
+                                            <i class="bi bi-calendar2-range"></i>
+                                        </div>
+                                        <div>
+                                            <p class="sgpp-mockup-mini-title">Planejamento Docente</p>
+                                            <p class="sgpp-mockup-mini-desc">Planilha Excel Oficial</p>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-arrow-right-circle text-primary fs-5"></i>
+                                </div>
+
+                                <div class="sgpp-mockup-mini-card">
+                                    <div class="sgpp-mockup-mini-info">
+                                        <div class="sgpp-mockup-mini-icon" style="background: #0284c7;">
+                                            <i class="bi bi-journal-bookmark"></i>
+                                        </div>
+                                        <div>
+                                            <p class="sgpp-mockup-mini-title">Planos de Aula</p>
+                                            <p class="sgpp-mockup-mini-desc">Encontro por Encontro</p>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-arrow-right-circle text-muted fs-5"></i>
+                                </div>
+
+                                <div class="sgpp-mockup-mini-card">
+                                    <div class="sgpp-mockup-mini-info">
+                                        <div class="sgpp-mockup-mini-icon" style="background: #d97706;">
+                                            <i class="bi bi-patch-question"></i>
+                                        </div>
+                                        <div>
+                                            <p class="sgpp-mockup-mini-title">Atividades Avaliativas</p>
+                                            <p class="sgpp-mockup-mini-desc">Provas com Gabarito</p>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-arrow-right-circle text-muted fs-5"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASSO 3: PLANEJAMENTO DOCENTE (EXCEL OFICIAL) -->
+            <div class="sgpp-tutorial-step-content" data-step="3">
+                <div class="sgpp-tutorial-grid">
+                    <div>
+                        <span class="sgpp-tutorial-badge-step">
+                            <i class="bi bi-file-earmark-spreadsheet text-success"></i> Etapa 3 de 6 &bull; Planejamento do Semestre
+                        </span>
+                        <h2 class="sgpp-tutorial-heading">Planejamento Semestral em 1 Minuto</h2>
+                        <p class="sgpp-tutorial-subheading">
+                            Preencher a planilha de planejamento curricular à mão costuma ser cansativo. Veja como é fácil no SGPP:
+                        </p>
+
+                        <ul class="sgpp-tutorial-points">
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-1-circle-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Preencha o básico:</strong> Informe o nome do curso (ex: <em>Eletromecânica</em>), o componente curricular e a carga horária total (ex: <em>80 horas</em>).
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-2-circle-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Anexe ou digite a ementa:</strong> Você pode anexar o PDF do plano de curso da escola ou apenas colar os principais assuntos.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-3-circle-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Geração com Taxonomia de Bloom:</strong> O sistema distribui as aulas cronologicamente, classifica as competências e calcula a carga horária exata.
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="sgpp-tutorial-tip-box">
+                            <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                            <div>
+                                <strong>Resultado pronto:</strong> Você clica em <strong>"Baixar Excel Oficial"</strong> e recebe o arquivo <code>.xlsx</code> perfeitamente formatado, com todas as bordas e fórmulas prontas para assinar e entregar!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ILUSTRAÇÃO VISUAL DO PASSO 3 -->
+                    <div>
+                        <div class="sgpp-tutorial-visual-card">
+                            <div class="sgpp-mockup-excel">
+                                <div class="sgpp-mockup-excel-top">
+                                    <span><i class="bi bi-file-earmark-excel me-1"></i> Planejamento_Docente.xlsx</span>
+                                    <span class="badge bg-light text-dark">Oficial</span>
+                                </div>
+                                <table class="sgpp-mockup-excel-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Aula</th>
+                                            <th>Conteúdo</th>
+                                            <th>Nível Bloom</th>
+                                            <th>CH</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>01</td>
+                                            <td>Normas de Segurança NR-10</td>
+                                            <td><span class="badge bg-primary text-white">Compreender</span></td>
+                                            <td>4h</td>
+                                        </tr>
+                                        <tr>
+                                            <td>02</td>
+                                            <td>Circuitos e Cargas Elétricas</td>
+                                            <td><span class="badge bg-info text-dark">Aplicar</span></td>
+                                            <td>4h</td>
+                                        </tr>
+                                        <tr>
+                                            <td>03</td>
+                                            <td>Medição com Multímetro</td>
+                                            <td><span class="badge bg-success text-white">Analisar</span></td>
+                                            <td>4h</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="sgpp-mockup-btn-download" title="Exemplo de botão real de download">
+                                <i class="bi bi-download"></i> Baixar Excel Oficial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASSO 4: PLANOS DE AULA (POR ENCONTRO) -->
+            <div class="sgpp-tutorial-step-content" data-step="4">
+                <div class="sgpp-tutorial-grid">
+                    <div>
+                        <span class="sgpp-tutorial-badge-step">
+                            <i class="bi bi-journal-check text-info"></i> Etapa 4 de 6 &bull; Planos de Aula
+                        </span>
+                        <h2 class="sgpp-tutorial-heading">O Roteiro Completo de Cada Aula</h2>
+                        <p class="sgpp-tutorial-subheading">
+                            Você não precisa redigitar nada para montar as aulas do dia a dia. O SGPP aproveita o seu planejamento!
+                        </p>
+
+                        <ul class="sgpp-tutorial-points">
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-magic"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Gerar Planos com 1 Clique:</strong> Na página do seu planejamento, basta clicar no botão <em>"Gerar Planos de Aula"</em>. O sistema divide automaticamente cada encontro.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-card-checklist"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Tudo detalhado para o professor:</strong> Cada encontro já vem com <em>Objetivos de Aprendizagem</em>, <em>Estratégia Metodológica</em>, <em>Recursos Necessários</em> e <em>Avaliação</em>.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-lightning-charge-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Atalho Inteligente:</strong> Em cada aula, há o botão <em>"Gerar Atividade a partir desta Aula"</em>. A IA lê o que você vai ensinar e já cria os exercícios correspondentes!
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="sgpp-tutorial-tip-box" style="background: #fdf4ff; border-color: #f5d0fe; border-left-color: #c026d3; color: #86198f;">
+                            <i class="bi bi-file-earmark-word-fill" style="color: #c026d3;"></i>
+                            <div>
+                                <strong>Exporte como preferir:</strong> Você pode baixar os planos individualmente ou o curso inteiro em <strong>Word (.docx)</strong> ou <strong>PDF</strong>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ILUSTRAÇÃO VISUAL DO PASSO 4 -->
+                    <div>
+                        <div class="sgpp-tutorial-visual-card">
+                            <div class="bg-white p-3 rounded-3 border text-start w-100 shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-primary text-white">Aula 01 &bull; 4 Horas</span>
+                                    <span class="text-muted small"><i class="bi bi-check-circle-fill text-success"></i> Pronto</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">Fundamentos e Prática Laboratorial</h6>
+                                <p class="text-muted small mb-3">Metodologia ativa com demonstração prática em bancada didática.</p>
+                                
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-file-earmark-word text-primary me-1"></i> Word</span>
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-file-earmark-pdf text-danger me-1"></i> PDF</span>
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-pencil-square me-1"></i> Criar Atividade</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASSO 5: GERADOR DE ATIVIDADES E PROVAS -->
+            <div class="sgpp-tutorial-step-content" data-step="5">
+                <div class="sgpp-tutorial-grid">
+                    <div>
+                        <span class="sgpp-tutorial-badge-step">
+                            <i class="bi bi-pencil-square text-warning"></i> Etapa 5 de 6 &bull; Provas e Atividades
+                        </span>
+                        <h2 class="sgpp-tutorial-heading">Elabore Provas com Gabarito Rápido</h2>
+                        <p class="sgpp-tutorial-subheading">
+                            Criar boas questões e digitar gabaritos toma muito tempo. Com o gerador, você faz avaliações completas em segundos:
+                        </p>
+
+                        <ul class="sgpp-tutorial-points">
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-input-cursor-text"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Escolha o assunto:</strong> Digite o tema que você ensinou (ex: <em>'Leis de Newton'</em> ou <em>'Redação de Relatórios Técnicos'</em>).
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-ui-checks"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Defina o tipo e a quantidade:</strong>
+                                    <br>&bull; <em>Objetivas:</em> Com alternativas A, B, C, D e E.
+                                    <br>&bull; <em>Discursivas:</em> Questões com linhas de resposta para o aluno dissertar.
+                                    <br>&bull; <em>Mistas:</em> Combinando questões objetivas e discursivas.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon">
+                                    <i class="bi bi-file-earmark-check-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Gabarito Automático para o Professor:</strong> A folha de respostas vem comentada, explicando por que aquela alternativa é a correta.
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="sgpp-tutorial-tip-box" style="background: #fffbeb; border-color: #fde68a; border-left-color: #d97706; color: #92400e;">
+                            <i class="bi bi-printer-fill" style="color: #d97706;"></i>
+                            <div>
+                                <strong>Pronto para imprimir:</strong> Já sai com cabeçalho oficial para o aluno colocar Nome, Data e Turma, economizando tempo de formatação.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ILUSTRAÇÃO VISUAL DO PASSO 5 -->
+                    <div>
+                        <div class="sgpp-tutorial-visual-card">
+                            <div class="sgpp-mockup-exam">
+                                <div class="sgpp-mockup-exam-header">
+                                    <span class="fw-bold" style="font-size: 0.75rem;">AVALIAÇÃO PEDAGÓGICA</span>
+                                    <span class="badge bg-secondary" style="font-size: 0.65rem;">SENAI / SGPP</span>
+                                </div>
+                                <p class="sgpp-mockup-exam-question">Questão 1. Qual dispositivo de proteção atua em caso de sobrecorrente?</p>
+                                <div class="sgpp-mockup-exam-options">
+                                    <div class="sgpp-mockup-exam-opt">A) Transformador de potência</div>
+                                    <div class="sgpp-mockup-exam-opt correct"><i class="bi bi-check-circle-fill me-1"></i> B) Disjuntor termomagnético</div>
+                                    <div class="sgpp-mockup-exam-opt">C) Chave comutadora simples</div>
+                                </div>
+                                <div class="sgpp-mockup-gabarito-tag">
+                                    <i class="bi bi-key-fill text-warning"></i> Gabarito do Docente Incluso
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASSO 6: REPOSITÓRIO E DICAS FINAIS -->
+            <div class="sgpp-tutorial-step-content" data-step="6">
+                <div class="sgpp-tutorial-grid">
+                    <div>
+                        <span class="sgpp-tutorial-badge-step" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0;">
+                            <i class="bi bi-trophy-fill text-success"></i> Etapa 6 de 6 &bull; Pronto para Começar!
+                        </span>
+                        <h2 class="sgpp-tutorial-heading">Você está Pronto para Economizar Horas!</h2>
+                        <p class="sgpp-tutorial-subheading">
+                            Agora você conhece as ferramentas do sistema. Veja apenas estas 2 dicas valiosas para o seu dia a dia:
+                        </p>
+
+                        <ul class="sgpp-tutorial-points">
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon" style="background: #e0e7ff; color: #4338ca;">
+                                    <i class="bi bi-archive-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Repositório de Questões:</strong> Suas questões criadas ficam arquivadas na aba <em>"Repositório"</em>. Quando for aplicar uma recuperação ou prova substitutiva, basta reutilizá-las sem precisar digitar tudo de novo.
+                                </div>
+                            </li>
+                            <li class="sgpp-tutorial-point-item">
+                                <div class="sgpp-tutorial-point-icon" style="background: #fef9c3; color: #854d0e;">
+                                    <i class="bi bi-lightbulb-fill"></i>
+                                </div>
+                                <div class="sgpp-tutorial-point-text">
+                                    <strong>Esqueceu algo? Sem problemas!</strong> A qualquer momento você pode clicar no botão <strong>"Como Usar (Tutorial)"</strong> localizado na barra azul do topo da página. Este guia reabrirá para você.
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="sgpp-tutorial-tip-box" style="background: #ecfdf5; border-color: #a7f3d0; border-left-color: #059669; color: #065f46;">
+                            <i class="bi bi-emoji-smile-fill" style="color: #059669;"></i>
+                            <div>
+                                <strong>Conte sempre conosco:</strong> O SGPP foi pensado para ser seu parceiro diário. Aproveite seu tempo para o que faz a diferença na educação!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ILUSTRAÇÃO VISUAL DO PASSO 6 -->
+                    <div>
+                        <div class="sgpp-tutorial-visual-card" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #93c5fd;">
+                            <div class="text-center py-3">
+                                <div class="display-3 text-primary mb-2">
+                                    <i class="bi bi-award-fill"></i>
+                                </div>
+                                <h4 class="fw-bold text-dark mb-1">Parabéns!</h4>
+                                <p class="text-muted small mb-4">Você concluiu o guia inicial com sucesso.</p>
+                                <button type="button" class="sgpp-tutorial-btn sgpp-tutorial-btn-finish w-100" onclick="concluirTutorial()">
+                                    <i class="bi bi-rocket-takeoff-fill"></i> Começar a Usar o SGPP Agora!
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RODAPÉ DE NAVEGAÇÃO -->
+        <div class="sgpp-tutorial-footer">
+            <div>
+                <button type="button" class="sgpp-tutorial-btn sgpp-tutorial-btn-skip" onclick="fecharTutorial()">
+                    Pular por enquanto
+                </button>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="sgpp-tutorial-btn sgpp-tutorial-btn-prev" id="btnTutorialPrev" onclick="passoAnterior()" disabled>
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </button>
+
+                <button type="button" class="sgpp-tutorial-btn sgpp-tutorial-btn-next" id="btnTutorialNext" onclick="proximoPasso()">
+                    Próximo Passo <i class="bi bi-arrow-right"></i>
+                </button>
+
+                <button type="button" class="sgpp-tutorial-btn sgpp-tutorial-btn-finish d-none" id="btnTutorialFinish" onclick="concluirTutorial()">
+                    <i class="bi bi-check2-circle"></i> Concluir Tutorial
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>

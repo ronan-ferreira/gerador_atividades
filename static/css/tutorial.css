@@ -1,0 +1,752 @@
+/* ============================================================
+   SGPP — TUTORIAL PASSO A PASSO INTERATIVO
+   Desenvolvido especialmente com acessibilidade e fluidez visual
+   para professores de todos os níveis de experiência tecnológica
+   ============================================================ */
+
+/* Overlay / Backdrop com efeito de desfoque elegante */
+.sgpp-tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sgpp-tutorial-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Janela do Modal do Tutorial */
+.sgpp-tutorial-dialog {
+    background: #ffffff;
+    width: 100%;
+    max-width: 940px;
+    max-height: 92vh;
+    border-radius: 24px;
+    box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.35),
+                0 0 0 1px rgba(226, 232, 240, 0.9);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.92) translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.sgpp-tutorial-overlay.active .sgpp-tutorial-dialog {
+    transform: scale(1) translateY(0);
+}
+
+/* Cabeçalho do Tutorial */
+.sgpp-tutorial-header {
+    background: linear-gradient(135deg, #0f2942 0%, #1e3a8a 100%);
+    color: #ffffff;
+    padding: 22px 30px 18px 30px;
+    position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sgpp-tutorial-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.sgpp-tutorial-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sgpp-tutorial-brand-badge {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sgpp-tutorial-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.sgpp-tutorial-close-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.sgpp-tutorial-close-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(90deg);
+}
+
+/* Barra de Passos Interativos (Stepper) */
+.sgpp-tutorial-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    margin-top: 6px;
+    padding: 0 10px;
+}
+
+.sgpp-tutorial-stepper::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 24px;
+    right: 24px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.sgpp-tutorial-progress-line {
+    position: absolute;
+    top: 50%;
+    left: 24px;
+    height: 3px;
+    background: #38bdf8;
+    transform: translateY(-50%);
+    z-index: 2;
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+.sgpp-tutorial-step-item {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.sgpp-tutorial-step-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #1e3a8a;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.88rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sgpp-tutorial-step-item.active .sgpp-tutorial-step-circle {
+    background: #38bdf8;
+    color: #0f2942;
+    border-color: #ffffff;
+    transform: scale(1.15);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.8);
+}
+
+.sgpp-tutorial-step-item.completed .sgpp-tutorial-step-circle {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+.sgpp-tutorial-step-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 5px;
+    font-weight: 500;
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .sgpp-tutorial-step-label {
+        display: block;
+    }
+}
+
+.sgpp-tutorial-step-item.active .sgpp-tutorial-step-label {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* Corpo do Tutorial */
+.sgpp-tutorial-body {
+    padding: 32px 36px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 420px;
+}
+
+/* Animação e estilo dos slides */
+.sgpp-tutorial-step-content {
+    display: none;
+    animation: tutorialSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sgpp-tutorial-step-content.active {
+    display: block;
+}
+
+@keyframes tutorialSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Layout em duas colunas: Conteúdo Didático + Demonstração Visual */
+.sgpp-tutorial-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 32px;
+    align-items: center;
+}
+
+@media (max-width: 820px) {
+    .sgpp-tutorial-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+/* Tipografia e Textos do Tutorial */
+.sgpp-tutorial-badge-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    margin-bottom: 12px;
+}
+
+.sgpp-tutorial-heading {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f2942;
+    margin-bottom: 10px;
+    line-height: 1.25;
+}
+
+.sgpp-tutorial-subheading {
+    font-size: 1.05rem;
+    color: #475569;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.sgpp-tutorial-points {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sgpp-tutorial-point-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.25s ease;
+}
+
+.sgpp-tutorial-point-item:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.sgpp-tutorial-point-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: #dbeafe;
+    color: #1e40af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.sgpp-tutorial-point-text {
+    font-size: 0.96rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+.sgpp-tutorial-point-text strong {
+    color: #0f2942;
+    font-weight: 700;
+}
+
+/* Caixa de Alerta Acolhedor / Dica do Professor */
+.sgpp-tutorial-tip-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #16a34a;
+    padding: 14px 18px;
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.92rem;
+    color: #166534;
+    line-height: 1.45;
+    margin-top: 14px;
+}
+
+.sgpp-tutorial-tip-box i {
+    font-size: 1.3rem;
+    color: #16a34a;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* Área de Demonstração Visual / Card Interativo */
+.sgpp-tutorial-visual-card {
+    background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 2px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 15px 30px -8px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.sgpp-tutorial-visual-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+/* Mockup Simulado: Boas-vindas */
+.sgpp-mockup-welcome {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.sgpp-mockup-avatar-circle {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+    animation: sgppFloat 3s ease-in-out infinite;
+}
+
+@keyframes sgppFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.sgpp-mockup-pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.sgpp-mockup-pill {
+    background: #ffffff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    border: 1px solid #bfdbfe;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Mockup Simulado: 3 Módulos do Dashboard */
+.sgpp-mockup-dash-cards {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+}
+
+.sgpp-mockup-mini-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.sgpp-mockup-mini-card.active-pulse {
+    border-color: #3b82f6;
+    background: #f0f7ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    animation: sgppCardGlow 2.5s infinite;
+}
+
+@keyframes sgppCardGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.4);
+    }
+}
+
+.sgpp-mockup-mini-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sgpp-mockup-mini-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.sgpp-mockup-mini-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f2942;
+    margin: 0;
+}
+
+.sgpp-mockup-mini-desc {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Mockup Simulado: Planilha Excel */
+.sgpp-mockup-excel {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    overflow: hidden;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    position: relative;
+    z-index: 1;
+}
+
+.sgpp-mockup-excel-top {
+    background: #107c41; /* Verde clássico Excel */
+    color: #ffffff;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.sgpp-mockup-excel-table {
+    width: 100%;
+    font-size: 0.72rem;
+    text-align: left;
+    border-collapse: collapse;
+}
+
+.sgpp-mockup-excel-table th {
+    background: #f1f5f9;
+    padding: 6px 8px;
+    border-bottom: 1px solid #cbd5e1;
+    color: #475569;
+    font-weight: 700;
+}
+
+.sgpp-mockup-excel-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+}
+
+.sgpp-mockup-btn-download {
+    margin-top: 12px;
+    background: #107c41;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 10px rgba(16, 124, 65, 0.3);
+    animation: sgppPulseBtn 2s infinite;
+}
+
+@keyframes sgppPulseBtn {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.03);
+    }
+}
+
+/* Mockup Simulado: Prova Avaliativa */
+.sgpp-mockup-exam {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    padding: 14px;
+    text-align: left;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    position: relative;
+    z-index: 1;
+}
+
+.sgpp-mockup-exam-header {
+    border-bottom: 2px solid #0f2942;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sgpp-mockup-exam-question {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0f2942;
+    margin-bottom: 8px;
+}
+
+.sgpp-mockup-exam-options {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.74rem;
+    color: #475569;
+}
+
+.sgpp-mockup-exam-opt {
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.sgpp-mockup-exam-opt.correct {
+    background: #dcfce7;
+    color: #15803d;
+    font-weight: 700;
+    border: 1px solid #86efac;
+}
+
+.sgpp-mockup-gabarito-tag {
+    margin-top: 10px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Rodapé do Tutorial: Botões de Navegação */
+.sgpp-tutorial-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 18px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.sgpp-tutorial-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: none;
+    text-decoration: none;
+}
+
+.sgpp-tutorial-btn-prev {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.sgpp-tutorial-btn-prev:hover {
+    background: #cbd5e1;
+    color: #0f172a;
+}
+
+.sgpp-tutorial-btn-prev:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.sgpp-tutorial-btn-skip {
+    background: transparent;
+    color: #64748b;
+    font-weight: 600;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+}
+
+.sgpp-tutorial-btn-skip:hover {
+    color: #0f172a;
+    text-decoration: underline;
+}
+
+.sgpp-tutorial-btn-next {
+    background: #1e3a8a;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.sgpp-tutorial-btn-next:hover {
+    background: #172554;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.4);
+}
+
+.sgpp-tutorial-btn-finish {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    padding: 12px 28px;
+}
+
+.sgpp-tutorial-btn-finish:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.45);
+}
+
+/* Banner de boas-vindas do Tutorial no Dashboard */
+.tutorial-welcome-banner {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e0effe 100%) !important;
+    border: 1px solid #bae6fd !important;
+}
+
+.banner-tutorial-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+}
+
+/* Botão de Tutorial na Barra de Navegação */
+.btn-tutorial-trigger {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    transition: all 0.25s ease;
+}
+
+.btn-tutorial-trigger:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    transform: translateY(-1px);
+}
