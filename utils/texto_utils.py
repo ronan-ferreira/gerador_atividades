@@ -1,31 +1,33 @@
 import re
 
 SIMBOLOS_INICIAIS_REGEX = r'^[\s\?\¿\▪\▫\•\●\○\■\□\►\▸\◆\◇\✔\√\*\-\–\—\~\_\:\;\.\,\uf0b7\uf0a7\u2022\u25aa\u25ab\u25cf\u25cb\u25a0\u25a1\u2023\u2043]+'
-NUMERACAO_REGEX = r'^(\d+(\.\d+)*\.?|[a-zA-Z]\)|\d+\))\s*[-–—]?\s*'
+NUMERACAO_REGEX = r'^(?:(?:\d+(?:\.\d+)+[\.\)]?\s*|\d+[\.\)]\s*|\d+\s+(?=[A-Za-zÀ-ÿ])|\d+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-zà-ÿ])|[a-zA-Z]\)\s*)[-–—]?\s*)'
 
 PADROES_LIXO_ITEM = [
     r"^plano\s+de\s+curso",
     r"^plano\s+de\s+ensino",
     r"^p[aá]gina\s+\d+",
     r"^servi[çc]o\s+nacional",
+    r"^pelo\s+futuro\s+do\s+trabalho",
+    r"^senai?\s*:?\s*$",
     r"^departamento\s+regional",
     r"^federa[çc][aã]o",
     r"^fieto",
     r"^fp\.ep",
-    r"^m[oó]dulo\b",
-    r"^espec[ií]fico\b",
-    r"^b[aá]sico\b",
-    r"^introdut[oó]rio\b",
-    r"^unidade\s+curricular",
+    r"^m[oó]dulo\s*:?\s*$",
+    r"^espec[ií]fico\s*:?\s*$",
+    r"^b[aá]sico\s*:?\s*$",
+    r"^introdut[oó]rio\s*:?\s*$",
+    r"^unidade\s+curricular\s*:?\s*$",
     r"^detalhamento\s+da\s+unidade",
-    r"^capacidades\s+(?:t[eé]cnicas|socioemocionais|b[aá]sicas)",
-    r"^conhecimentos",
-    r"^conte[uú]dos\s+formativos",
-    r"^objetivo\s+geral",
+    r"^capacidades\s+(?:t[eé]cnicas|socioemocionais|b[aá]sicas)\s*:?\s*$",
+    r"^conhecimentos?\s*:?\s*$",
+    r"^conte[uú]dos\s+formativos\s*:?\s*$",
+    r"^objetivo\s+geral\s*:?\s*$",
     r"^carga\s+hor[aá]ria",
-    r"^horas\b",
-    r"^\d+\s*h(?:oras)?\b",
-    r"^fun[çc][oõ]es",
+    r"^horas\s*:?\s*$",
+    r"^\d+\s*h(?:oras)?\s*$",
+    r"^fun[çc][oõ]es\s*:?\s*$",
     r"^f\.\d+",
 ]
 

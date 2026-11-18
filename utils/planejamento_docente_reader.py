@@ -69,17 +69,24 @@ def ler_excel_planejamento_docente(caminho_excel):
         conhecimento = ""
 
         # Formato padrão: CAPACIDADE:\n...\nCONHECIMENTOS:\n...
-        if re.search(r"CONHECIMENTOS?", texto_bloco, flags=re.IGNORECASE):
-            partes = re.split(r"\s*CONHECIMENTOS?:?\s*|\bCONHECIMENTOS?\b", texto_bloco, flags=re.IGNORECASE)
+        # Prioriza cabeçalho CONHECIMENTO(S) em linha própria ou seguido de dois-pontos (:),
+        # evitando cortar frases da Capacidade que contenham a palavra "conhecimentos".
+        padrao_cab_conhec = re.compile(
+            r"(?:^|\n)\s*CONHECIMENTOS?\s*:?\s*(?:\n|$)|\s+CONHECIMENTOS?\s*:\s*",
+            flags=re.IGNORECASE
+        )
+        if padrao_cab_conhec.search(texto_bloco):
+            partes = padrao_cab_conhec.split(texto_bloco, maxsplit=1)
             cap_part = partes[0]
             con_part = partes[1] if len(partes) > 1 else ""
 
             # Remove prefixo "CAPACIDADE:" e limpa símbolos e numerações
-            capacidade = re.sub(r"^\s*CAPACIDADE:\s*", "", cap_part.strip(), flags=re.IGNORECASE).strip()
+            capacidade = re.sub(r"^\s*CAPACIDADES?\s*:?\s*", "", cap_part.strip(), flags=re.IGNORECASE).strip()
             capacidade = limpar_numeracao_texto(capacidade)
             conhecimento = limpar_numeracao_texto(con_part.strip(), separador="\n")
         else:
-            capacidade = limpar_numeracao_texto(texto_bloco)
+            cap_sem_pref = re.sub(r"^\s*CAPACIDADES?\s*:?\s*", "", texto_bloco.strip(), flags=re.IGNORECASE).strip()
+            capacidade = limpar_numeracao_texto(cap_sem_pref)
             conhecimento = ""
 
         if eh_tecnico:

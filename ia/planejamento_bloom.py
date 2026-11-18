@@ -27,9 +27,9 @@ NIVEIS_BLOOM = {
         "instrumentos": "QUESTIONÁRIO FORMATIVO E EXERCÍCIOS DE INTERPRETAÇÃO."
     },
     "Aplicar": {
-        "verbos": ["Executar", "Realizar", "Utilizar", "Empregar", "Operar", "Implementar", "Codificar", "Aplicar"],
-        "estrategias": ["AULA EXPOSITIVA COM ATIVIDADE PRÁTICA EM LABORATÓRIO", "PRÁTICA GUIADA", "RESOLUÇÃO DE PROBLEMAS PRÁTICOS"],
-        "recursos": ["NOTEBOOK\nTELA DIGITAL\nCOMPUTADORES\nAMBIENTE DE DESENVOLVIMENTO / LABORATÓRIO"],
+        "verbos": ["Executar", "Realizar", "Utilizar", "Empregar", "Operar", "Implementar", "Aplicar"],
+        "estrategias": ["AULA EXPOSITIVA COM ATIVIDADE PRÁTICA", "PRÁTICA GUIADA", "RESOLUÇÃO DE PROBLEMAS PRÁTICOS"],
+        "recursos": ["NOTEBOOK\nTELA DIGITAL\nRECURSOS E INSTRUMENTOS TÉCNICOS"],
         "criterios": "VERIFICAR A CORRETA EXECUÇÃO DOS PROCEDIMENTOS PRÁTICOS E APLICAÇÃO DOS CONCEITOS.",
         "instrumentos": "OBSERVAÇÃO DIRETA COM LISTA DE CHECAGEM (CHECKLIST) E ATIVIDADES PRÁTICAS."
     },
@@ -164,7 +164,7 @@ def classificar_bloom_topico(texto):
 def ordenar_conhecimentos_por_bloom(conhecimentos_brutos, matriz_itens=None):
     """
     Filtra ruídos institucionais ('Plano de Curso', cabeçalhos) e
-    ordena pedagogicamente os tópicos pela Taxonomia de Bloom.
+    preserva a sequência pedagógica e hierárquica dos tópicos do Plano de Curso.
     """
     conhecimentos_limpos = []
     for c in conhecimentos_brutos:
@@ -172,12 +172,99 @@ def ordenar_conhecimentos_por_bloom(conhecimentos_brutos, matriz_itens=None):
         if c_limpo and not eh_linha_lixo(c_limpo) and c_limpo not in conhecimentos_limpos:
             conhecimentos_limpos.append(c_limpo)
 
-    if not conhecimentos_limpos:
-        return []
+    return conhecimentos_limpos
 
-    # Ordenação pedagógica por nível de Bloom
-    ordenados = sorted(conhecimentos_limpos, key=classificar_bloom_topico)
-    return ordenados
+
+def _desdobrar_conhecimentos_para_aulas(lista_conhecimentos, total_aulas):
+    """
+    Quando a quantidade de linhas de conhecimento é menor que o total de aulas,
+    desdobra linhas compostas (separadas por ';' após ':') mantendo o título do tópico,
+    para que todas as aulas tenham conteúdos específicos do Plano de Curso.
+    """
+    if len(lista_conhecimentos) >= total_aulas or not lista_conhecimentos:
+        return lista_conhecimentos
+
+    expandidos = []
+    for item in lista_conhecimentos:
+        if len(expandidos) + (len(lista_conhecimentos) - lista_conhecimentos.index(item)) >= total_aulas and ";" not in item:
+            expandidos.append(item)
+            continue
+        if ":" in item and ";" in item:
+            prefixo, resto = item.split(":", 1)
+            partes = [p.strip() for p in resto.split(";") if p.strip()]
+            if len(partes) > 1:
+                for p in partes:
+                    expandidos.append(f"{prefixo.strip()}: {p}")
+                continue
+        elif ";" in item:
+            partes = [p.strip() for p in item.split(";") if p.strip()]
+            if len(partes) > 1:
+                expandidos.extend(partes)
+                continue
+        expandidos.append(item)
+
+    return expandidos
+
+
+def _distribuir_conhecimentos_por_aulas(dados_plano, total_aulas, uc_nome, matriz_uc=None):
+    """
+    Divide os conhecimentos do Plano de Curso em blocos exatamente para cada dia de aula:
+    - Se houver grupos de tópicos principais >= total_aulas, agrupa por tópicos inteiros
+      sem quebrar nenhum tópico principal no meio entre duas aulas.
+    - Caso contrário, distribui os subtópicos contextualizados preservando a ordem do curso.
+    """
+    grupos_brutos = dados_plano.get("grupos_conhecimentos") or []
+    grupos_limpos = []
+    for g in grupos_brutos:
+        g_l = [limpar_numeracao_item(x) for x in g if limpar_numeracao_item(x) and not eh_linha_lixo(x)]
+        if g_l:
+            grupos_limpos.append(g_l)
+
+    if len(grupos_limpos) >= total_aulas:
+        blocos_grupos = dividir_em_blocos(grupos_limpos, total_aulas)
+        return [[item for grp in bg for item in grp] for bg in blocos_grupos]
+
+    conhecimentos_ordenados = ordenar_conhecimentos_por_bloom(
+        dados_plano.get("conhecimentos", []),
+        matriz_itens=matriz_uc
+    )
+
+    if not conhecimentos_ordenados:
+        conhecimentos_ordenados = [
+            f"Fundamentos e conceitos de {uc_nome}",
+            "Definições e princípios essenciais",
+            "Estruturas e ferramentas de trabalho",
+            "Procedimentos e técnicas de aplicação",
+            "Operações e implementação prática",
+            "Boas práticas e controle de qualidade",
+            "Diagnóstico e resolução de problemas",
+            "Melhoria contínua e projetos integradores"
+        ]
+
+    if len(conhecimentos_ordenados) < total_aulas:
+        conhecimentos_ordenados = _desdobrar_conhecimentos_para_aulas(conhecimentos_ordenados, total_aulas)
+
+    return dividir_em_blocos(conhecimentos_ordenados, total_aulas)
+
+
+def _obter_ambiente_e_recursos_padrao(uc_nome):
+    """Retorna o ambiente pedagógico e os recursos didáticos coerentes com a área da UC."""
+    u = (uc_nome or "").lower()
+    termos_ti = ["informática", "informatica", "hardware", "software", "computador", "rede", "programação", "programacao", "sistema", "dados", "digital", "digitais", "web", "java", "python", "escritório", "escritorio"]
+    if any(t in u for t in termos_ti):
+        return (
+            "LABORATORIO T.I",
+            "NOTEBOOK\nTELA DIGITAL\nCOMPUTADORES\nFERRAMENTAS DIDÁTICAS"
+        )
+    if any(t in u for t in ["obra", "canteiro", "edifica", "constru", "topografia", "alvenaria"]):
+        return (
+            "SALA DE AULA / LABORATÓRIO PRÁTICO",
+            "NOTEBOOK\nTELA DIGITAL\nPROJETOS E DOCUMENTOS TÉCNICOS\nFERRAMENTAS DIDÁTICAS"
+        )
+    return (
+        "SALA DE AULA / LABORATÓRIO PRÁTICO",
+        "NOTEBOOK\nTELA DIGITAL\nRECURSOS E INSTRUMENTOS TÉCNICOS\nFERRAMENTAS DIDÁTICAS"
+    )
 
 
 def determinar_nivel_bloom_dia(dia, total_aulas):
@@ -199,79 +286,34 @@ def determinar_nivel_bloom_dia(dia, total_aulas):
 
 def adaptar_verbo_para_bloom(capacidade_texto, nivel_bloom):
     """
-    Garante que a capacidade inicie com um verbo perfeitamente alinhado
-    ao nível da Taxonomia de Bloom especificado, substituindo verbos de outros níveis
-    de forma natural e fluida.
+    Preserva a redação oficial das capacidades do Plano de Curso do SENAI quando já
+    iniciam com verbo pedagógico válido, e adapta suavemente caso contrário.
     """
     cap_limpa = limpar_numeracao_texto(capacidade_texto).strip()
     if not cap_limpa:
         return ""
 
-    cfg = NIVEIS_BLOOM.get(nivel_bloom, NIVEIS_BLOOM["Aplicar"])
-    verbos_alvo = cfg["verbos"]
-
-    # Se a capacidade já começa com um verbo válido do nível atual, preserva
-    primeira_palavra = cap_limpa.split()[0].capitalize()
-    if primeira_palavra in verbos_alvo:
+    # Se a capacidade oficial do Plano de Curso já começa com verbo no infinitivo, preserva sua gramática original
+    if re.match(r"^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-zà-ÿ]*(?:ar|er|ir|or|-se)\b", cap_limpa):
         return cap_limpa
 
-    # Substituição limpa de verbos transitivos
-    if nivel_bloom == "Lembrar":
-        if re.match(r"^(?:Reconhecer|Identificar|Listar|Nomear|Descrever|Definir)\b", cap_limpa, re.I):
-            return cap_limpa
-        cap_sub = re.sub(r"^[A-ZÁÉÍÓÚ][a-zà-ÿ]+(?:ar|er|ir|or)\b\s*", "", cap_limpa).strip()
-        return f"Reconhecer e identificar {cap_sub[0].lower() + cap_sub[1:]}" if cap_sub else cap_limpa
-
-    if nivel_bloom == "Entender":
-        if re.match(r"^(?:Compreender|Interpretar|Explicar|Diferenciar|Classificar|Associar)\b", cap_limpa, re.I):
-            return cap_limpa
-        cap_sub = re.sub(r"^[A-ZÁÉÍÓÚ][a-zà-ÿ]+(?:ar|er|ir|or)\b\s*", "", cap_limpa).strip()
-        return f"Compreender e interpretar {cap_sub[0].lower() + cap_sub[1:]}" if cap_sub else cap_limpa
-
-    if nivel_bloom == "Analisar":
-        if re.match(r"^(?:Analisar|Identificar|Diagnosticar|Examinar|Testar|Verificar|Depurar)\b", cap_limpa, re.I):
-            return cap_limpa
-        cap_sub = re.sub(r"^[A-ZÁÉÍÓÚ][a-zà-ÿ]+(?:ar|er|ir|or)\b\s*", "", cap_limpa).strip()
-        return f"Analisar e examinar {cap_sub[0].lower() + cap_sub[1:]}" if cap_sub else cap_limpa
-
-    if nivel_bloom == "Criar":
-        if re.match(r"^(?:Criar|Desenvolver|Projetar|Elaborar|Construir|Integrar)\b", cap_limpa, re.I):
-            return cap_limpa
-        cap_sub = re.sub(r"^[A-ZÁÉÍÓÚ][a-zà-ÿ]+(?:ar|er|ir|or)\b\s*", "", cap_limpa).strip()
-        return f"Desenvolver soluções aplicando {cap_sub[0].lower() + cap_sub[1:]}" if cap_sub else cap_limpa
-
-    if nivel_bloom == "Avaliar":
-        if re.match(r"^(?:Avaliar|Validar|Medir|Revisar)\b", cap_limpa, re.I):
-            return cap_limpa
-        cap_sub = re.sub(r"^[A-ZÁÉÍÓÚ][a-zà-ÿ]+(?:ar|er|ir|or)\b\s*", "", cap_limpa).strip()
-        return f"Avaliar a conformidade e eficácia de {cap_sub[0].lower() + cap_sub[1:]}" if cap_sub else cap_limpa
-
-    return cap_limpa
+    cfg = NIVEIS_BLOOM.get(nivel_bloom, NIVEIS_BLOOM["Aplicar"])
+    verbo = cfg["verbos"][0]
+    return f"{verbo} {cap_limpa[0].lower() + cap_limpa[1:]}"
 
 
-def formular_capacidade_dia(dia, total_aulas, nivel_bloom, topicos_dia, capacidades_plano, matriz_itens, socioemocionais, uc_nome):
+def formular_capacidade_dia(dia, total_aulas, nivel_bloom, topicos_dia, capacidades_plano, matriz_itens, socioemocionais, uc_nome, caps_usadas=None):
     """
-    Gera uma Capacidade completa, contextualizada e rigorosamente coerente
-    com a Taxonomia de Bloom, cruzando o Plano de Curso e a Matriz SAEP.
-    Garante que jamais haverá frases pela metade, termos cortados ou repetições vazias.
+    Seleciona a Capacidade do Plano de Curso / Matriz SAEP mais aderente aos
+    conhecimentos do dia, sem repetir capacidades já trabalhadas e sem cortar frases.
     """
     cfg_bloom = NIVEIS_BLOOM[nivel_bloom]
+    if caps_usadas is None:
+        caps_usadas = set()
 
-    # Última aula: Avaliação formal prática somativa
-    if dia == total_aulas:
-        return f"Avaliar a integridade, conformidade e execução prática dos conhecimentos e procedimentos desenvolvidos na Unidade Curricular de {uc_nome}."
-
-    # Penúltima aula: Projeto integrador / Criação / Inovação
-    if dia == total_aulas - 1 and total_aulas > 3:
-        if socioemocionais:
-            socio_ref = socioemocionais[0]
-            if len(socio_ref) > 15:
-                return f"Desenvolver soluções técnicas integrando os conhecimentos de {uc_nome}, valorizando a melhoria contínua nos processos de trabalho."
-        return f"Desenvolver e integrar soluções técnicas completas de {uc_nome}, propondo melhorias e inovações nos processos de trabalho."
-
-    # Capacidades consolidadas do Plano de Curso + Matriz SAEP (Itinerário e SAEP)
+    # Capacidades consolidadas do Plano de Curso (Técnicas + Socioemocionais) + Matriz SAEP
     todas_caps = []
-    for c in capacidades_plano:
+    for c in list(capacidades_plano or []) + list(socioemocionais or []):
         c_l = limpar_numeracao_texto(c)
         if c_l and len(c_l) > 15 and not eh_linha_lixo(c_l) and c_l not in todas_caps:
             todas_caps.append(c_l)
@@ -283,31 +325,44 @@ def formular_capacidade_dia(dia, total_aulas, nivel_bloom, topicos_dia, capacida
             todas_caps.append(cap_l)
 
     topicos_str = " ".join(topicos_dia).lower()
-    palavras_topicos = set(w for w in re.findall(r"\b[a-záéíóúãõç]{4,}\b", topicos_str) if w not in ["para", "com", "como", "sobre", "entre"])
+    stopwords_cap = {"para", "com", "como", "sobre", "entre", "processos", "trabalho", "equipe", "equipes", "obras", "construção", "civil", "diferentes", "atividades"}
+    palavras_topicos = set(
+        w for w in re.findall(r"\b[a-záéíóúâêôãõç]{4,}\b", topicos_str)
+        if w not in stopwords_cap
+    )
+
+    caps_disponiveis = [c for c in todas_caps if c not in caps_usadas] or todas_caps
 
     melhor_cap = None
     maior_score = 0
 
-    for cap in todas_caps:
-        palavras_cap = set(re.findall(r"\b[a-záéíóúãõç]{4,}\b", cap.lower()))
+    for cap in caps_disponiveis:
+        palavras_cap = set(re.findall(r"\b[a-záéíóúâêôãõç]{4,}\b", cap.lower()))
         score = len(palavras_topicos.intersection(palavras_cap))
         if score > maior_score:
             maior_score = score
             melhor_cap = cap
 
-    # Se encontrou capacidade aderente pelo cruzamento de termos com o conteúdo do dia
     if melhor_cap and maior_score > 0:
+        caps_usadas.add(melhor_cap)
         return adaptar_verbo_para_bloom(melhor_cap, nivel_bloom)
 
-    # Mapeamento proporcional se não houver cruzamento direto de palavras
-    if todas_caps:
-        idx = min(int((dia - 1) / total_aulas * len(todas_caps)), len(todas_caps) - 1)
-        cap_cand = todas_caps[idx]
+    # Mapeamento proporcional entre as capacidades disponíveis do Plano de Curso
+    if caps_disponiveis:
+        idx = min(int((dia - 1) / total_aulas * len(caps_disponiveis)), len(caps_disponiveis) - 1)
+        cap_cand = caps_disponiveis[idx]
+        caps_usadas.add(cap_cand)
         return adaptar_verbo_para_bloom(cap_cand, nivel_bloom)
 
-    # Fallback contextualizado se não houver capacidades cadastradas
+    # Última aula (fallback quando o plano não possui capacidades extraídas)
+    if dia == total_aulas:
+        return f"Avaliar a integridade, conformidade e execução prática dos conhecimentos e procedimentos desenvolvidos na Unidade Curricular de {uc_nome}."
+
+    if dia == total_aulas - 1 and total_aulas > 3:
+        return f"Desenvolver e integrar soluções técnicas completas de {uc_nome}, propondo melhorias e inovações nos processos de trabalho."
+
     verbo = cfg_bloom["verbos"][dia % len(cfg_bloom["verbos"])]
-    topico_ref = topicos_dia[0] if topicos_dia else f"procedimentos de {uc_nome}"
+    topico_ref = topicos_dia[0].split(":")[0] if topicos_dia else f"procedimentos de {uc_nome}"
     return f"{verbo} os conceitos, técnicas e procedimentos relativos a {topico_ref.lower()} na resolução de problemas práticos."
 
 
@@ -332,28 +387,17 @@ def gerar_planejamento_algoritmico(dados_plano, dados_matriz, total_aulas, horas
         if limpar_numeracao_texto(c) and not eh_linha_lixo(c)
     ]
 
-    # 3. Limpa e ordena pedagogicamente os conhecimentos com Bloom
-    conhecimentos_ordenados = ordenar_conhecimentos_por_bloom(
-        dados_plano.get("conhecimentos", []),
-        matriz_itens=matriz_uc
+    # 3. Divide os conhecimentos estruturados pelos dias de aula
+    blocos_conhecimentos = _distribuir_conhecimentos_por_aulas(
+        dados_plano,
+        total_aulas,
+        uc_nome=uc_nome,
+        matriz_uc=matriz_uc
     )
-
-    if not conhecimentos_ordenados:
-        conhecimentos_ordenados = [
-            f"Fundamentos e conceitos de {uc_nome}",
-            "Definições e princípios essenciais",
-            "Estruturas e ferramentas de trabalho",
-            "Procedimentos e técnicas de aplicação",
-            "Operações e implementação prática",
-            "Boas práticas e controle de qualidade",
-            "Diagnóstico e resolução de problemas",
-            "Melhoria contínua e projetos integradores"
-        ]
-
-    # Divide os conhecimentos ordenados pelos dias de aula
-    blocos_conhecimentos = dividir_em_blocos(conhecimentos_ordenados, total_aulas)
+    ambiente_padrao, recursos_padrao = _obter_ambiente_e_recursos_padrao(uc_nome)
 
     aulas = []
+    caps_usadas = set()
     for dia in range(1, total_aulas + 1):
         nivel = determinar_nivel_bloom_dia(dia, total_aulas)
         cfg_bloom = NIVEIS_BLOOM[nivel]
@@ -372,7 +416,8 @@ def gerar_planejamento_algoritmico(dados_plano, dados_matriz, total_aulas, horas
             capacidades_plano=capacidades_plano,
             matriz_itens=matriz_uc,
             socioemocionais=socioemocionais,
-            uc_nome=uc_nome
+            uc_nome=uc_nome,
+            caps_usadas=caps_usadas
         )
 
         data_aula = datas[dia - 1] if dia - 1 < len(datas) else datetime.now()
@@ -402,8 +447,8 @@ def gerar_planejamento_algoritmico(dados_plano, dados_matriz, total_aulas, horas
             "conhecimento": texto_conhecimento,
             "saep": saep_dia,
             "estrategia": estrategia,
-            "ambiente": "LABORATORIO T.I",
-            "recursos": "NOTEBOOK\nTELA DIGITAL\nCOMPUTADORES\nFERRAMENTAS DIDÁTICAS",
+            "ambiente": ambiente_padrao,
+            "recursos": recursos_padrao,
             "carga_horaria_str": f"{horas_por_dia} HS",
             "criterios": criterios,
             "instrumentos": instrumentos,
@@ -418,9 +463,9 @@ def gerar_planejamento_algoritmico(dados_plano, dados_matriz, total_aulas, horas
 
 def gerar_planejamento_ia(dados_plano, dados_matriz, total_aulas, horas_por_dia, datas):
     """
-    Chama o Ollama para enriquecer os planos de aula com o cruzamento da Taxonomia de Bloom.
-    Em caso de lentidão, indisponibilidade ou inconsistência de aulas, utiliza o motor
-    algorítmico robusto baseado na mesma matriz pedagógica.
+    Chama a IA para enriquecer os planos de aula com o cruzamento da Taxonomia de Bloom,
+    garantindo fidelidade total à separação hierárquica dos conhecimentos do Plano de Curso.
+    Em caso de lentidão, indisponibilidade ou inconsistência, utiliza o motor algorítmico robusto.
     """
     uc = dados_plano.get("unidade_curricular", "")
     objetivo = dados_plano.get("objetivo_geral", "")
@@ -428,12 +473,18 @@ def gerar_planejamento_ia(dados_plano, dados_matriz, total_aulas, horas_por_dia,
     # Filtra matriz especificamente para a UC alvo
     matriz_uc = filtrar_matriz_por_uc(dados_matriz, uc)
 
-    # Conhecimentos ordenados pedagogicamente e limpos
-    conhecimentos_ordenados = ordenar_conhecimentos_por_bloom(
-        dados_plano.get("conhecimentos", []),
-        matriz_itens=matriz_uc
+    # Distribui os conhecimentos estruturados do Plano de Curso para cada aula
+    blocos_conhecimentos = _distribuir_conhecimentos_por_aulas(
+        dados_plano,
+        total_aulas,
+        uc_nome=uc,
+        matriz_uc=matriz_uc
     )
-    conhecimentos_str = "\n".join(conhecimentos_ordenados[:40])
+    conhecimentos_por_aula_str = "\n".join(
+        f"Aula {i+1}: {' | '.join(bloco)}"
+        for i, bloco in enumerate(blocos_conhecimentos)
+    )
+    ambiente_padrao, recursos_padrao = _obter_ambiente_e_recursos_padrao(uc)
 
     capacidades_plano = [
         limpar_numeracao_texto(c) for c in dados_plano.get("capacidades_tecnicas", [])
@@ -463,16 +514,16 @@ CAPACIDADES DA MATRIZ SAEP / ITINERÁRIO:
 CAPACIDADES DO PLANO DE CURSO:
 {capacidades_str}
 
-CONHECIMENTOS PEDAGOGICAMENTE ORDENADOS:
-{conhecimentos_str}
+CONHECIMENTOS DISTRIBUÍDOS POR AULA (USE EXATAMENTE ESTES CONHECIMENTOS EM CADA AULA):
+{conhecimentos_por_aula_str}
 
 REQUISITOS PEDAGOGICOS OBRIGATORIOS:
-1. Distribua os conhecimentos progressivamente ao longo das {total_aulas} aulas.
+1. Mantenha rigorosamente os conhecimentos de cada aula conforme a distribuicao acima.
 2. Aplique a Taxonomia de Bloom na progressao cognitiva:
-   - Aulas iniciais: Lembrar e Entender (fundamentos, conceitos, definicoes, tipos de dados, modelos)
-   - Aulas intermediarias: Aplicar (operadores, estruturas condicionais e de repeticao, codificacao, compiladores)
-   - Aulas avancadas: Analisar (padroes de nomenclatura, indentacao, legibilidade, depuracao de codigo)
-   - Aulas finais: Criar e Avaliar (projetos integradores, melhoria de processos, avaliacao pratica)
+   - Aulas iniciais: Lembrar e Entender
+   - Aulas intermediarias: Aplicar
+   - Aulas avancadas: Analisar
+   - Aulas finais: Criar e Avaliar
 3. REGRA CRITICA: NUNCA coloque termos como "Plano de Curso" nos conhecimentos.
 4. REGRA CRITICA: NUNCA coloque numeros de topicos ou secoes (como "1", "1.1", "2.1") e NUNCA coloque simbolos (?, •, -, *) no inicio das palavras. Escreva apenas os nomes limpos, separados por quebra de linha \\n.
 5. Cada aula DEVE conter:
@@ -521,7 +572,11 @@ Responda ESTRITAMENTE em formato JSON valido, sem nenhum texto antes ou depois:
                         dia = idx + 1
                         data_aula = datas[idx] if idx < len(datas) else datetime.now()
                         cap_ia = limpar_numeracao_texto(a.get("capacidade", ""))
-                        con_ia = limpar_numeracao_texto(a.get("conhecimento", ""), separador="\n")
+                        topicos_plano_dia = [t for t in blocos_conhecimentos[idx] if t and not eh_linha_lixo(t)]
+                        if topicos_plano_dia and dados_plano.get("conhecimentos"):
+                            con_ia = "\n".join(topicos_plano_dia)
+                        else:
+                            con_ia = limpar_numeracao_texto(a.get("conhecimento", ""), separador="\n") or "\n".join(topicos_plano_dia)
                         nivel_ia = a.get("nivel_bloom", determinar_nivel_bloom_dia(dia, total_aulas))
 
                         # Validação de integridade do texto
@@ -547,9 +602,9 @@ Responda ESTRITAMENTE em formato JSON valido, sem nenhum texto antes ou depois:
                             "capacidade": cap_ia,
                             "conhecimento": con_ia,
                             "saep": saep_dia,
-                            "estrategia": a.get("estrategia", "AULA EXPOSITIVA COM ATIVIDADE PRATICA EM LABORATORIO"),
-                            "ambiente": "LABORATORIO T.I",
-                            "recursos": "NOTEBOOK\nTELA DIGITAL\nCOMPUTADORES\nFERRAMENTAS DIDÁTICAS",
+                            "estrategia": a.get("estrategia", "AULA EXPOSITIVA COM ATIVIDADE PRÁTICA"),
+                            "ambiente": ambiente_padrao,
+                            "recursos": recursos_padrao,
                             "carga_horaria_str": f"{horas_por_dia} HS",
                             "criterios": a.get("criterios", "VERIFICAR O ENTENDIMENTO E DESEMPENHO PRÁTICO DO ALUNO."),
                             "instrumentos": a.get("instrumentos", "OBSERVAÇÃO DIRETA E ATIVIDADE PRÁTICA."),
